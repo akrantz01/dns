@@ -225,3 +225,20 @@ func getTXTRecord(db *bolt.DB, qname string) ([]string, error) {
 
 	return content, err
 }
+
+func getNSRecord(db *bolt.DB, qname string) (string, error) {
+	var nameserver string
+
+	err := db.View(func(tx *bolt.Tx) error {
+		records := tx.Bucket([]byte("NS"))
+
+		value := records.Get([]byte(qname[:len(qname) - 1]))
+		if len(value) != 0 {
+			nameserver = string(value)
+		}
+
+		return nil
+	})
+
+	return nameserver, err
+}
