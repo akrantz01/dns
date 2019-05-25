@@ -1,6 +1,9 @@
 package main
 
-import bolt "go.etcd.io/bbolt"
+import (
+	bolt "go.etcd.io/bbolt"
+	"net"
+)
 
 func setupDB(db *bolt.DB) error {
 	return db.Batch(func(tx *bolt.Tx) error {
@@ -25,4 +28,36 @@ func setupDB(db *bolt.DB) error {
 		if _, err := tx.CreateBucketIfNotExists([]byte("URI")); err != nil { return err }
 		return nil
 	})
+}
+
+func getARecord(db *bolt.DB, qname string) (net.IP, error) {
+	var addr net.IP
+
+	err := db.View(func(tx *bolt.Tx) error {
+		records := tx.Bucket([]byte("A"))
+
+		value := records.Get([]byte(qname[:len(qname) - 1]))
+		if len(value) != 0 {
+			addr = net.ParseIP(string(value))
+		}
+
+		return nil
+	})
+	return addr, err
+}
+
+func getAAAARecord(db *bolt.DB, qname string) (net.IP, error) {
+	var addr net.IP
+
+	err := db.View(func(tx *bolt.Tx) error {
+		records := tx.Bucket([]byte("AAAA"))
+
+		value := records.Get([]byte(qname[:len(qname) - 1]))
+		if len(value) != 0 {
+			addr = net.ParseIP(string(value))
+		}
+
+		return nil
+	})
+	return addr, err
 }

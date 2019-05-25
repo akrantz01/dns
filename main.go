@@ -4,7 +4,6 @@ import (
 	"github.com/miekg/dns"
 	bolt "go.etcd.io/bbolt"
 	"log"
-	"net"
 	"time"
 )
 
@@ -23,9 +22,15 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 
 		switch q.Qtype {
 		case dns.TypeA:
-			r.Answer = append(r.Answer, &dns.A{Hdr: hdr, A: net.IPv4(127, 0, 0, 1)})
+			ip, _ := getARecord(db, q.Name)
+			if ip != nil {
+				r.Answer = append(r.Answer, &dns.A{Hdr: hdr, A: ip})
+			}
 		case dns.TypeAAAA:
-			r.Answer = append(r.Answer, &dns.AAAA{Hdr: hdr, AAAA: net.IPv6loopback})
+			ip, _ := getAAAARecord(db, q.Name)
+			if ip != nil {
+				r.Answer = append(r.Answer, &dns.AAAA{Hdr: hdr, AAAA: ip})
+			}
 		default:
 			r.Rcode = dns.RcodeNameError
 		}
