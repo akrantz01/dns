@@ -1,5 +1,2 @@
 # Custom DNS Server
-A custom configured DNS server using [CoreDNS](https://coredns.io) to run it.
-
-## Contents
-In this folder, there is the `Corefile` that specifies the configuration. The `rest` plugin used in the `Corefile` can be found at [coredns-rest](https://github.com/akrantz01/coredns-rest).
+An entirely custom DNS server that can dynamically add and remove records through a web UI that is backed by a REST API. It uses [Bolt](https://github.com/etcd-io/bbolt) for storage and [Miekg DNS](https://github.com/miekg/dns) for, well, DNS.
