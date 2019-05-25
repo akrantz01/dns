@@ -38,17 +38,17 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 			}
 		case dns.TypeMX:
 			host, priority, _ := getMXRecord(db, q.Name)
-			if host != "" && priority != 0 {
+			if host != "" {
 				r.Answer = append(r.Answer, &dns.MX{Hdr: hdr, Preference: priority, Mx: host})
 			}
 		case dns.TypeLOC:
 			vers, siz, hor, ver, lat, lon, alt, _ := getLOCRecord(db, q.Name)
-			if vers != 0 && siz != 0 && hor != 0 && ver != 0 && lat != 0 && lon != 0 && alt != 0 {
+			if lat != 0 && lon != 0 {
 				r.Answer = append(r.Answer, &dns.LOC{Hdr: hdr, Version: vers, Size: siz, HorizPre: hor, VertPre: ver, Latitude: lat, Longitude: lon, Altitude: alt})
 			}
 		case dns.TypeSRV:
 			priority, weight, port, target, _ := getSRVRecord(db, q.Name)
-			if priority != 0 && weight != 0 && port != 0 && target != "" {
+			if target != "" {
 				r.Answer = append(r.Answer, &dns.SRV{Hdr: hdr, Priority: priority, Weight: weight, Port: port, Target: target})
 			}
 		case dns.TypeSPF:
@@ -68,13 +68,53 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 			}
 		case dns.TypeCAA:
 			flag, tag, content, _ := getCAARecord(db, q.Name)
-			if flag == 0 && tag != "" && content != "" {
+			if tag != "" && content != "" {
 				r.Answer = append(r.Answer, &dns.CAA{Hdr: hdr, Flag: flag, Tag: tag, Value: content})
 			}
 		case dns.TypePTR:
 			ptr, _ := getPTRRecord(db, q.Name)
 			if ptr != "" {
 				r.Answer = append(r.Answer, &dns.PTR{Hdr: hdr, Ptr: ptr})
+			}
+		case dns.TypeCERT:
+			tpe, tag, algo, cert, _ := getCERTRecord(db, q.Name)
+			if cert != "" {
+				r.Answer = append(r.Answer, &dns.CERT{Hdr: hdr, Type: tpe, KeyTag: tag, Algorithm: algo, Certificate: cert})
+			}
+		case dns.TypeDNSKEY:
+			flags, proto, algo, pub, _ := getDNSKEYRecord(db, q.Name)
+			if pub != "" {
+				r.Answer = append(r.Answer, &dns.DNSKEY{Hdr: hdr, Flags: flags, Protocol: proto, Algorithm: algo, PublicKey: pub})
+			}
+		case dns.TypeDS:
+			ktag, algo, dtype, digest, _ := getDSRecord(db, q.Name)
+			if digest != "" {
+				r.Answer = append(r.Answer, &dns.DS{Hdr: hdr, KeyTag: ktag, Algorithm: algo, DigestType: dtype, Digest: digest})
+			}
+		case dns.TypeNAPTR:
+			ord, pref, flag, serv, reg, rep, _ := getNAPTRRecord(db, q.Name)
+			if serv != "" && reg != "" && rep != "" {
+				r.Answer = append(r.Answer, &dns.NAPTR{Hdr: hdr, Order: ord, Preference: pref, Flags: flag, Service: serv, Regexp: reg, Replacement: rep})
+			}
+		case dns.TypeSMIMEA:
+			usage, sel, match, cert, _ := getSMIMEARecord(db, q.Name)
+			if cert != "" {
+				r.Answer = append(r.Answer, &dns.SMIMEA{Hdr: hdr, Usage: usage, Selector: sel, MatchingType: match, Certificate: cert})
+			}
+		case dns.TypeSSHFP:
+			algo, tpe, fingerprint, _ := getSSHFPRecord(db, q.Name)
+			if fingerprint != "" {
+				r.Answer = append(r.Answer, &dns.SSHFP{Hdr: hdr, Algorithm: algo, Type: tpe, FingerPrint: fingerprint})
+			}
+		case dns.TypeTLSA:
+			usg, sel, mat, cert, _ := getTLSARecord(db, q.Name)
+			if cert != "" {
+				r.Answer = append(r.Answer, &dns.TLSA{Hdr: hdr, Usage: usg, Selector: sel, MatchingType: mat, Certificate: cert})
+			}
+		case dns.TypeURI:
+			pri, wei, tar, _ := getURIRecord(db, q.Name)
+			if tar != "" {
+				r.Answer = append(r.Answer, &dns.URI{Hdr: hdr, Priority: pri, Weight: wei, Target: tar})
 			}
 		default:
 			r.Rcode = dns.RcodeNameError

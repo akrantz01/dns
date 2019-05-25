@@ -87,13 +87,14 @@ func getMXRecord(db *bolt.DB, qname string) (string, uint16, error) {
 
 	err := db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("MX"))
+		shortenedName := qname[:len(qname) - 1]
 
-		hostValue := records.Get([]byte(qname[:len(qname) - 1] + "-host"))
+		hostValue := records.Get([]byte(shortenedName + "-host"))
 		if len(hostValue) != 0 {
 			host = string(hostValue)
 		}
 
-		priorityValue := records.Get([]byte(qname[:len(qname) - 1] + "-priority"))
+		priorityValue := records.Get([]byte(shortenedName + "-priority"))
 		if len(priorityValue) != 0 {
 			priority = binary.BigEndian.Uint16(priorityValue)
 		}
@@ -251,12 +252,13 @@ func getCAARecord(db *bolt.DB, qname string) (uint8, string, string, error) {
 
 	err := db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("CAA"))
+		shortenedName := qname[:len(qname) - 1]
 
-		tagValue := records.Get([]byte(qname[:len(qname) - 1] + "-tag"))
+		tagValue := records.Get([]byte(shortenedName + "-tag"))
 		if len(tagValue) != 0 {
 			tag = string(tagValue)
 		}
-		contentValue := records.Get([]byte(qname[:len(qname) - 1] + "-content"))
+		contentValue := records.Get([]byte(shortenedName + "-content"))
 		if len(contentValue) != 0 {
 			content = string(contentValue)
 		}
@@ -282,4 +284,284 @@ func getPTRRecord(db *bolt.DB, qname string) (string, error) {
 	})
 
 	return ptr, err
+}
+
+func getCERTRecord(db *bolt.DB, qname string) (uint16, uint16, uint8, string, error) {
+	var (
+		tpe uint16
+		keyTag uint16
+		algo uint8
+		cert string
+	)
+
+	err := db.View(func(tx *bolt.Tx) error {
+		records := tx.Bucket([]byte("CERT"))
+		shortenedName := qname[:len(qname) - 1]
+
+		typeValue := records.Get([]byte(shortenedName + "-type"))
+		if len(typeValue) != 0 {
+			tpe = binary.BigEndian.Uint16(typeValue)
+		}
+		keyTagValue := records.Get([]byte(shortenedName + "-keytag"))
+		if len(keyTagValue) != 0 {
+			keyTag = binary.BigEndian.Uint16(keyTagValue)
+		}
+		algoValue := records.Get([]byte(shortenedName + "-algorithm"))
+		if len(algoValue) != 0 {
+			algo = algoValue[0]
+		}
+		certValue := records.Get([]byte(shortenedName + "-certificate"))
+		if len(certValue) != 0 {
+			cert = string(certValue)
+		}
+
+		return nil
+	})
+
+	return tpe, keyTag, algo, cert, err
+}
+
+func getDNSKEYRecord(db *bolt.DB, qname string) (uint16, uint8, uint8, string, error) {
+	var (
+		flags uint16
+		proto uint8
+		algo uint8
+		pub string
+	)
+
+	err := db.View(func(tx *bolt.Tx) error {
+		records := tx.Bucket([]byte("DNSKEY"))
+		shortenedName := qname[:len(qname) - 1]
+
+		flagsValue := records.Get([]byte(shortenedName + "-flags"))
+		if len(flagsValue) != 0 {
+			flags = binary.BigEndian.Uint16(flagsValue)
+		}
+		protoValue := records.Get([]byte(shortenedName + "-protocol"))
+		if len(protoValue) != 0 {
+			proto = protoValue[0]
+		}
+		algoValue := records.Get([]byte(shortenedName + "-algorithm"))
+		if len(algoValue) != 0 {
+			algo = algoValue[0]
+		}
+		pubValue := records.Get([]byte(shortenedName + "-publickey"))
+		if len(pubValue) != 0 {
+			pub = string(pubValue)
+		}
+
+		return nil
+	})
+
+	return flags, proto, algo, pub, err
+}
+
+func getDSRecord(db *bolt.DB, qname string) (uint16, uint8, uint8, string, error) {
+	var (
+		ktag uint16
+		algo uint8
+		dtype uint8
+		digest string
+	)
+
+	err := db.View(func(tx *bolt.Tx) error {
+		records := tx.Bucket([]byte("DS"))
+		shortenedName := qname[:len(qname) - 1]
+
+		ktagValue := records.Get([]byte(shortenedName + "-keytag"))
+		if len(ktagValue) != 0 {
+			ktag = binary.BigEndian.Uint16(ktagValue)
+		}
+		algoValue := records.Get([]byte(shortenedName + "-algorithm"))
+		if len(algoValue) != 0 {
+			algo = algoValue[0]
+		}
+		dtypeValue := records.Get([]byte(shortenedName + "-digesttype"))
+		if len(dtypeValue) != 0 {
+			dtype = dtypeValue[0]
+		}
+		digestValue := records.Get([]byte(shortenedName + "-digest"))
+		if len(digestValue) != 0 {
+			digest = string(digestValue)
+		}
+
+		return nil
+	})
+
+	return ktag, algo, dtype, digest, err
+}
+
+func getNAPTRRecord(db *bolt.DB, qname string) (uint16, uint16, string, string, string, string, error) {
+	var (
+		order uint16
+		pref uint16
+		flags string
+		service string
+		regexp string
+		replacement string
+	)
+
+	err := db.View(func(tx *bolt.Tx) error {
+		records := tx.Bucket([]byte("NAPTR"))
+		shortenedName := qname[:len(qname) - 1]
+
+		orderValue := records.Get([]byte(shortenedName + "-order"))
+		if len(orderValue) != 0 {
+			order = binary.BigEndian.Uint16(orderValue)
+		}
+		prefValue := records.Get([]byte(shortenedName + "-preference"))
+		if len(prefValue) != 0 {
+			pref = binary.BigEndian.Uint16(prefValue)
+		}
+		flagsValue := records.Get([]byte(shortenedName + "-flags"))
+		if len(flagsValue) != 0 {
+			flags = string(flagsValue)
+		}
+		serviceValue := records.Get([]byte(shortenedName + "-service"))
+		if len(serviceValue) != 0 {
+			service = string(serviceValue)
+		}
+		regexpValue := records.Get([]byte(shortenedName + "-regexp"))
+		if len(regexpValue) != 0 {
+			regexp = string(regexpValue)
+		}
+		replacementValue := records.Get([]byte(shortenedName + "-replacement"))
+		if len(replacementValue) != 0 {
+			replacement = string(replacementValue)
+		}
+
+		return nil
+	})
+
+	return order, pref, flags, service, regexp, replacement, err
+}
+
+func getSMIMEARecord(db *bolt.DB, qname string) (uint8, uint8, uint8, string, error) {
+	var (
+		usage uint8
+		selector uint8
+		matching uint8
+		cert string
+	)
+
+	err := db.View(func(tx *bolt.Tx) error {
+		records := tx.Bucket([]byte("SMIMEA"))
+		shortenedName := qname[:len(qname) - 1]
+
+		usageValue := records.Get([]byte(shortenedName + "-usage"))
+		if len(usageValue) != 0 {
+			usage = usageValue[0]
+		}
+		selectorValue := records.Get([]byte(shortenedName + "-selector"))
+		if len(selectorValue) != 0 {
+			selector = selectorValue[0]
+		}
+		matchingValue := records.Get([]byte(shortenedName + "-matching"))
+		if len(matchingValue) != 0 {
+			matching = matchingValue[0]
+		}
+		certValue := records.Get([]byte(shortenedName + "-certificate"))
+		if len(certValue) != 0 {
+			cert = string(certValue)
+		}
+
+		return nil
+	})
+
+	return usage, selector, matching, cert, err
+}
+
+func getSSHFPRecord(db *bolt.DB, qname string) (uint8, uint8, string, error) {
+	var (
+		algo uint8
+		tpe uint8
+		fingerprint string
+	)
+
+	err := db.View(func(tx *bolt.Tx) error {
+		records := tx.Bucket([]byte("SSHFP"))
+		shortenedName := qname[:len(qname) - 1]
+
+		algoValue := records.Get([]byte(shortenedName + "-algorithm"))
+		if len(algoValue) != 0 {
+			algo = algoValue[0]
+		}
+		tpeValue := records.Get([]byte(shortenedName + "-type"))
+		if len(tpeValue) != 0 {
+			tpe = tpeValue[0]
+		}
+		fingerprintValue := records.Get([]byte(shortenedName + "-fingerprint"))
+		if len(fingerprintValue) != 0 {
+			fingerprint = string(fingerprintValue)
+		}
+
+		return nil
+	})
+
+	return algo, tpe, fingerprint, err
+}
+
+func getTLSARecord(db *bolt.DB, qname string) (uint8, uint8, uint8, string, error) {
+	var (
+		usage uint8
+		selector uint8
+		matching uint8
+		cert string
+	)
+
+	err := db.View(func(tx *bolt.Tx) error {
+		records := tx.Bucket([]byte("TLSA"))
+		shortenedName := qname[:len(qname) - 1]
+
+		usageValue := records.Get([]byte(shortenedName + "-usage"))
+		if len(usageValue) != 0 {
+			usage = usageValue[0]
+		}
+		selectorValue := records.Get([]byte(shortenedName + "-selector"))
+		if len(selectorValue) != 0 {
+			selector = selectorValue[0]
+		}
+		matchingValue := records.Get([]byte(shortenedName + "-matching"))
+		if len(matchingValue) != 0 {
+			matching = matchingValue[0]
+		}
+		certValue := records.Get([]byte(shortenedName + "-certificate"))
+		if len(certValue) != 0 {
+			cert = string(certValue)
+		}
+
+		return nil
+	})
+
+	return usage, selector, matching, cert, err
+}
+
+func getURIRecord(db *bolt.DB, qname string) (uint16, uint16, string, error) {
+	var (
+		priority uint16
+		weight uint16
+		target string
+	)
+
+	err := db.View(func(tx *bolt.Tx) error {
+		records := tx.Bucket([]byte("URI"))
+		shortenedName := qname[:len(qname) - 1]
+
+		priorityValue := records.Get([]byte(shortenedName + "-priority"))
+		if len(priorityValue) != 0 {
+			priority = binary.BigEndian.Uint16(priorityValue)
+		}
+		weightValue := records.Get([]byte(shortenedName + "-weight"))
+		if len(weightValue) != 0 {
+			weight = binary.BigEndian.Uint16(weightValue)
+		}
+		targetValue := records.Get([]byte(shortenedName + "-target"))
+		if len(targetValue) != 0 {
+			target = string(targetValue)
+		}
+
+		return nil
+	})
+
+	return priority, weight, target, err
 }
