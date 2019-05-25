@@ -56,6 +56,11 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 			if len(txt) != 0 {
 				r.Answer = append(r.Answer, &dns.SPF{Hdr: hdr, Txt: txt})
 			}
+		case dns.TypeTXT:
+			content, _ := getTXTRecord(db, q.Name)
+			if len(content) != 0 {
+				r.Answer = append(r.Answer, &dns.TXT{Hdr: hdr, Txt: content})
+			}
 		default:
 			r.Rcode = dns.RcodeNameError
 		}

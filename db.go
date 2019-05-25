@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
-	"fmt"
 	bolt "go.etcd.io/bbolt"
 	"net"
 )
@@ -194,7 +193,6 @@ func getSPFRecord(db *bolt.DB, qname string) ([]string, error) {
 
 	err := db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("SPF"))
-		fmt.Println(qname[:len(qname) - 1])
 
 		value := records.Get([]byte(qname[:len(qname) - 1]))
 		if len(value) != 0 {
@@ -207,4 +205,23 @@ func getSPFRecord(db *bolt.DB, qname string) ([]string, error) {
 	})
 
 	return txt, err
+}
+
+func getTXTRecord(db *bolt.DB, qname string) ([]string, error) {
+	var content []string
+
+	err := db.View(func(tx *bolt.Tx) error {
+		records := tx.Bucket([]byte("TXT"))
+
+		value := records.Get([]byte(qname[:len(qname) - 1]))
+		if len(value) != 0 {
+			decoded := bytes.NewBuffer(value)
+			dec := gob.NewDecoder(decoded)
+			if err := dec.Decode(&content); err != nil {}
+		}
+
+		return nil
+	})
+
+	return content, err
 }
