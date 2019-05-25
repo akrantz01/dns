@@ -18,6 +18,7 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 	r.Authoritative = true
 
 	for _, q := range r.Question {
+		logQuestion(q)
 		hdr := dns.RR_Header{Name: q.Name, Rrtype: q.Qtype, Class: q.Qclass}
 
 		switch q.Qtype {
@@ -48,6 +49,8 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 func main() {
 	server := &dns.Server{Addr: "127.0.0.1:1053", Net: "udp"}
 	server.Handler = &handler{}
+
+	log.Printf("Listening on 127.0.0.1:1053 for requests...")
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Failed to set udp listener: %v", err)
 	}
