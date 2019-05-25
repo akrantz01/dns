@@ -61,3 +61,19 @@ func getAAAARecord(db *bolt.DB, qname string) (net.IP, error) {
 	})
 	return addr, err
 }
+
+func getCNAMERecord(db *bolt.DB, qname string) (string, error) {
+	var target string
+
+	err := db.View(func(tx *bolt.Tx) error {
+		records := tx.Bucket([]byte("CNAME"))
+
+		value := records.Get([]byte(qname[:len(qname) - 1]))
+		if len(value) != 0 {
+			target = string(value)
+		}
+
+		return nil
+	})
+	return target, err
+}

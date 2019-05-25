@@ -31,6 +31,11 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 			if ip != nil {
 				r.Answer = append(r.Answer, &dns.AAAA{Hdr: hdr, AAAA: ip})
 			}
+		case dns.TypeCNAME:
+			target, _ := getCNAMERecord(db, q.Name)
+			if target != "" {
+				r.Answer = append(r.Answer, &dns.CNAME{Hdr: hdr, Target: target})
+			}
 		default:
 			r.Rcode = dns.RcodeNameError
 		}
