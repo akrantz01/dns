@@ -47,11 +47,30 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 }
 
 func main() {
-	server := &dns.Server{Addr: "127.0.0.1:1053", Net: "udp"}
-	server.Handler = &handler{}
+	// Handle TCP connections
+	tcpErr := make(chan error)
+	go func() {
+		tcp := &dns.Server{Addr: "127.0.0.1:1053", Net: "tcp"}
+		tcp.Handler = &handler{}
 
-	log.Printf("Listening on 127.0.0.1:1053 for requests...")
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatalf("Failed to set udp listener: %v", err)
+		if err := tcp.ListenAndServe(); err != nil { tcpErr <- err }
+	}()
+
+	// Handle UDP connections
+	udpErr := make(chan error)
+	go func() {
+		udp := &dns.Server{Addr: "127.0.0.1:1053", Net: "udp"}
+		udp.Handler = &handler{}
+
+		if err := udp.ListenAndServe(); err != nil { udpErr <- err }
+	}()
+
+	log.Println("Listening on 127.0.0.1:1053 with TCP and UDP...")
+
+	select {
+	case err := <- tcpErr:
+		log.Fatalf("Failed to listen on 127.0.0.1:1052 with TCP: %v\n", err)
+	case err := <- udpErr:
+		log.Fatalf("Failed to listen on 127.0.0.1:1053 with UDP: %v\n", err)
 	}
 }
