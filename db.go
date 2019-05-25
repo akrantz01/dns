@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	bolt "go.etcd.io/bbolt"
 	"net"
 )
@@ -76,4 +77,26 @@ func getCNAMERecord(db *bolt.DB, qname string) (string, error) {
 		return nil
 	})
 	return target, err
+}
+
+func getMXRecord(db *bolt.DB, qname string) (string, uint16, error) {
+	var host string
+	var priority uint16
+
+	err := db.View(func(tx *bolt.Tx) error {
+		records := tx.Bucket([]byte("MX"))
+
+		hostValue := records.Get([]byte(qname[:len(qname) - 1] + "-host"))
+		if len(hostValue) != 0 {
+			host = string(hostValue)
+		}
+
+		priorityValue := records.Get([]byte(qname[:len(qname) - 1] + "-priority"))
+		if len(priorityValue) != 0 {
+			priority = binary.BigEndian.Uint16(priorityValue)
+		}
+
+		return nil
+	})
+	return host, priority, err
 }
