@@ -1,35 +1,96 @@
 package main
 
 import (
+	"fmt"
+	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
-	"k8s.io/utils/strings"
-	"log"
+	"strconv"
+	"strings"
+	"time"
 )
 
-func logQuestion(q dns.Question) {
-	var qtype string
-	switch q.Qtype {
-	// DS NAPTR SMIMEA SSHFP TLSA URI
-	case dns.TypeA: qtype = "A"
-	case dns.TypeAAAA: qtype = "AAAA"
-	case dns.TypeCNAME: qtype = "CNAME"
-	case dns.TypeMX: qtype = "MX"
-	case dns.TypeLOC: qtype = "LOC"
-	case dns.TypeSRV: qtype = "SRV"
-	case dns.TypeSPF: qtype = "SPF"
-	case dns.TypeTXT: qtype = "TXT"
-	case dns.TypeNXT: qtype = "NXT"
-	case dns.TypeCAA: qtype = "CAA"
-	case dns.TypePTR: qtype = "PTR"
-	case dns.TypeCERT: qtype = "CERT"
-	case dns.TypeDNSKEY: qtype = "DNSKEY"
-	case dns.TypeDS: qtype = "DS"
-	case dns.TypeNAPTR: qtype = "NAPTR"
-	case dns.TypeSMIMEA: qtype = "SMIMEA"
-	case dns.TypeSSHFP: qtype = "SSHFP"
-	case dns.TypeTLSA: qtype = "TLSA"
-	case dns.TypeURI: qtype = "URI"
-	}
+// From CoreDNS logging plugin
+func logResponse(w dns.ResponseWriter, r *dns.Msg, start time.Time) {
+	state := request.Request{W: w, Req: r}
 
-	log.Printf("%s in %s", strings.ShortenString(q.Name, len(q.Name) - 1), qtype)
+	fmt.Printf("%s:%s - %s \"%s %s %s %s %s %s %s\" %s %s %s %s\n",
+		convertRemote(state.IP()), state.Port(), strconv.Itoa(int(state.Req.Id)),
+		state.Type(), state.Class(), state.Name(), state.Proto(),
+		strconv.Itoa(state.Req.Len()), boolToString(state.Do()), strconv.Itoa(state.Size()),
+		getRCode(r), getRFlags(r), getRSize(r), strconv.FormatFloat(time.Since(start).Seconds(), 'f', -1, 64) + "s")
+}
+
+func convertRemote(addr string) string {
+	if strings.Contains(addr, ":") {
+		return "[" + addr + "]"
+	}
+	return addr
+}
+
+func boolToString(b bool) string {
+	if b { return "true" }
+	return "false"
+}
+
+func getRCode(r *dns.Msg) string {
+	if r == nil {
+		return "-"
+	}
+	rcode := dns.RcodeToString[r.Rcode]
+	if rcode == "" {
+		rcode = strconv.Itoa(r.Rcode)
+	}
+	return rcode
+}
+
+func getRFlags(r *dns.Msg) string {
+	if r == nil {
+		return "-"
+	}
+	h := r.MsgHdr
+
+	flags := make([]string, 7)
+	i := 0
+
+	if h.Response {
+		flags[i] = "qr"
+		i++
+	}
+	if h.Authoritative {
+		flags[i] = "aa"
+		i++
+	}
+	if h.Truncated {
+		flags[i] = "tc"
+		i++
+	}
+	if h.RecursionDesired {
+		flags[i] = "rd"
+		i++
+	}
+	if h.RecursionAvailable {
+		flags[i] = "ra"
+		i++
+	}
+	if h.Zero {
+		flags[i] = "z"
+		i++
+	}
+	if h.AuthenticatedData {
+		flags[i] = "ad"
+		i++
+	}
+	if h.CheckingDisabled {
+		flags[i] = "cd"
+		i++
+	}
+	return strings.Join(flags[:i], ",")
+}
+
+func getRSize(r *dns.Msg) string {
+	if r == nil {
+		return "-"
+	}
+	// Not sure how to get this, so return 0
+	return "0"
 }

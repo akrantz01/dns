@@ -4,6 +4,7 @@ import (
 	"github.com/miekg/dns"
 	"log"
 	"net"
+	"time"
 )
 
 var records = map[string]string{
@@ -13,12 +14,13 @@ var records = map[string]string{
 
 type handler struct {}
 func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
-	r := dns.Msg{}
+	start := time.Now()
+
+	r := new(dns.Msg)
 	r.SetReply(m)
 	r.Authoritative = true
 
 	for _, q := range r.Question {
-		logQuestion(q)
 		hdr := dns.RR_Header{Name: q.Name, Rrtype: q.Qtype, Class: q.Qclass}
 
 		switch q.Qtype {
@@ -41,9 +43,11 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 		r.Rcode = dns.RcodeNameError
 	}
 
-	if err := w.WriteMsg(&r); err != nil {
+	if err := w.WriteMsg(r); err != nil {
 		log.Printf("Unable to send response: %v", err)
 	}
+
+	logResponse(w, r, start)
 }
 
 func main() {
@@ -67,6 +71,7 @@ func main() {
 
 	log.Println("Listening on 127.0.0.1:1053 with TCP and UDP...")
 
+	// Watch for errors
 	select {
 	case err := <- tcpErr:
 		log.Fatalf("Failed to listen on 127.0.0.1:1052 with TCP: %v\n", err)
