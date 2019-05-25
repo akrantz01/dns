@@ -1,13 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"encoding/binary"
+	"encoding/gob"
+	"fmt"
 	bolt "go.etcd.io/bbolt"
 	"net"
 )
 
 func setupDB(db *bolt.DB) error {
-	return db.Batch(func(tx *bolt.Tx) error {
+	return db.Update(func(tx *bolt.Tx) error {
 		if _, err := tx.CreateBucketIfNotExists([]byte("A")); err != nil { return err }
 		if _, err := tx.CreateBucketIfNotExists([]byte("AAAA")); err != nil { return err }
 		if _, err := tx.CreateBucketIfNotExists([]byte("CNAME")); err != nil { return err }
@@ -184,4 +187,24 @@ func getSRVRecord(db *bolt.DB, qname string) (uint16, uint16, uint16, string, er
 	})
 
 	return priority, weight, port, target, err
+}
+
+func getSPFRecord(db *bolt.DB, qname string) ([]string, error) {
+	var txt []string
+
+	err := db.View(func(tx *bolt.Tx) error {
+		records := tx.Bucket([]byte("SPF"))
+		fmt.Println(qname[:len(qname) - 1])
+
+		value := records.Get([]byte(qname[:len(qname) - 1]))
+		if len(value) != 0 {
+			decoded := bytes.NewBuffer(value)
+			dec := gob.NewDecoder(decoded)
+			if err := dec.Decode(&txt); err != nil {}
+		}
+
+		return nil
+	})
+
+	return txt, err
 }

@@ -51,6 +51,11 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 			if priority != 0 && weight != 0 && port != 0 && target != "" {
 				r.Answer = append(r.Answer, &dns.SRV{Hdr: hdr, Priority: priority, Weight: weight, Port: port, Target: target})
 			}
+		case dns.TypeSPF:
+			txt, _ := getSPFRecord(db, q.Name)
+			if len(txt) != 0 {
+				r.Answer = append(r.Answer, &dns.SPF{Hdr: hdr, Txt: txt})
+			}
 		default:
 			r.Rcode = dns.RcodeNameError
 		}
