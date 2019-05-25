@@ -242,3 +242,27 @@ func getNSRecord(db *bolt.DB, qname string) (string, error) {
 
 	return nameserver, err
 }
+
+func getCAARecord(db *bolt.DB, qname string) (uint8, string, string, error) {
+	var (
+		tag string
+		content string
+	)
+
+	err := db.View(func(tx *bolt.Tx) error {
+		records := tx.Bucket([]byte("CAA"))
+
+		tagValue := records.Get([]byte(qname[:len(qname) - 1] + "-tag"))
+		if len(tagValue) != 0 {
+			tag = string(tagValue)
+		}
+		contentValue := records.Get([]byte(qname[:len(qname) - 1] + "-content"))
+		if len(contentValue) != 0 {
+			content = string(contentValue)
+		}
+
+		return nil
+	})
+
+	return 0, tag, content, err
+}

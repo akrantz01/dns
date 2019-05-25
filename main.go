@@ -66,6 +66,11 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 			if nameserver != "" {
 				r.Answer = append(r.Answer, &dns.NS{Hdr: hdr, Ns: nameserver})
 			}
+		case dns.TypeCAA:
+			flag, tag, content, _ := getCAARecord(db, q.Name)
+			if flag == 0 && tag != "" && content != "" {
+				r.Answer = append(r.Answer, &dns.CAA{Hdr: hdr, Flag: flag, Tag: tag, Value: content})
+			}
 		default:
 			r.Rcode = dns.RcodeNameError
 		}
