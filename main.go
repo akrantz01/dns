@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/miekg/dns"
 	bolt "go.etcd.io/bbolt"
 	"log"
@@ -39,10 +38,13 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 			}
 		case dns.TypeMX:
 			host, priority, _ := getMXRecord(db, q.Name)
-			fmt.Println(host)
-			fmt.Println(priority)
 			if host != "" && priority != 0 {
 				r.Answer = append(r.Answer, &dns.MX{Hdr: hdr, Preference: priority, Mx: host})
+			}
+		case dns.TypeLOC:
+			vers, siz, hor, ver, lat, lon, alt, _ := getLOCRecord(db, q.Name)
+			if vers != 0 && siz != 0 && hor != 0 && ver != 0 && lat != 0 && lon != 0 && alt != 0 {
+				r.Answer = append(r.Answer, &dns.LOC{Hdr: hdr, Version: vers, Size: siz, HorizPre: hor, VertPre: ver, Latitude: lat, Longitude: lon, Altitude: alt})
 			}
 		default:
 			r.Rcode = dns.RcodeNameError

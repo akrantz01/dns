@@ -100,3 +100,53 @@ func getMXRecord(db *bolt.DB, qname string) (string, uint16, error) {
 	})
 	return host, priority, err
 }
+
+func getLOCRecord(db *bolt.DB, qname string) (uint8, uint8, uint8, uint8, uint32, uint32, uint32, error) {
+	var (
+		version	uint8
+		size 	uint8
+		horiz 	uint8
+		vert 	uint8
+		lat 	uint32
+		long	uint32
+		alt 	uint32
+	)
+
+	err := db.View(func(tx *bolt.Tx) error {
+		records := tx.Bucket([]byte("LOC"))
+		shortenedName := qname[:len(qname) - 1]
+
+		versionValue := records.Get([]byte(shortenedName + "-version"))
+		if len(versionValue) != 0 {
+			version = versionValue[0]
+		}
+		sizeValue := records.Get([]byte(shortenedName + "-size"))
+		if len(sizeValue) != 0 {
+			size = sizeValue[0]
+		}
+		horizValue := records.Get([]byte(shortenedName + "-horiz"))
+		if len(horizValue) != 0 {
+			horiz = horizValue[0]
+		}
+		vertValue := records.Get([]byte(shortenedName + "-vert"))
+		if len(vertValue) != 0 {
+			vert = vertValue[0]
+		}
+		latValue := records.Get([]byte(shortenedName + "-lat"))
+		if len(latValue) != 0 {
+			lat = binary.BigEndian.Uint32(latValue)
+		}
+		longValue := records.Get([]byte(shortenedName + "-long"))
+		if len(longValue) != 0 {
+			long = binary.BigEndian.Uint32(longValue)
+		}
+		altValue := records.Get([]byte(shortenedName + "-alt"))
+		if len(altValue) != 0 {
+			alt = binary.BigEndian.Uint32(altValue)
+		}
+
+		return nil
+	})
+
+	return version, size, horiz, vert, lat, long, alt, err
+}
