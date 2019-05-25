@@ -2,15 +2,13 @@ package main
 
 import (
 	"github.com/miekg/dns"
+	bolt "go.etcd.io/bbolt"
 	"log"
 	"net"
 	"time"
 )
 
-var records = map[string]string{
-	"ipv4.test.": "127.0.0.1",
-	"ipv6.test.": "::1",
-}
+var db *bolt.DB
 
 type handler struct {}
 func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
@@ -25,15 +23,9 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 
 		switch q.Qtype {
 		case dns.TypeA:
-			ip, ok := records[q.Name]
-			if ok {
-				r.Answer = append(r.Answer, &dns.A{Hdr: hdr, A: net.ParseIP(ip)})
-			}
+			r.Answer = append(r.Answer, &dns.A{Hdr: hdr, A: net.IPv4(127, 0, 0, 1)})
 		case dns.TypeAAAA:
-			ip, ok := records[q.Name]
-			if ok {
-				r.Answer = append(r.Answer, &dns.AAAA{Hdr: hdr, AAAA: net.ParseIP(ip)})
-			}
+			r.Answer = append(r.Answer, &dns.AAAA{Hdr: hdr, AAAA: net.IPv6loopback})
 		default:
 			r.Rcode = dns.RcodeNameError
 		}
@@ -51,6 +43,19 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 }
 
 func main() {
+	// Open database
+	var err error
+	db, err = bolt.Open("records.db", 0666, nil)
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
+	}
+	defer func() { if err := db.Close(); err != nil { log.Fatalf("Failed to close database: %v", err) }}()
+
+	// Setup database structure
+	if err := setupDB(db); err != nil {
+		log.Fatalf("Failed setting up database structure: %v", err)
+	}
+
 	// Handle TCP connections
 	tcpErr := make(chan error)
 	go func() {
