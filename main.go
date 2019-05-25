@@ -46,6 +46,11 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 			if vers != 0 && siz != 0 && hor != 0 && ver != 0 && lat != 0 && lon != 0 && alt != 0 {
 				r.Answer = append(r.Answer, &dns.LOC{Hdr: hdr, Version: vers, Size: siz, HorizPre: hor, VertPre: ver, Latitude: lat, Longitude: lon, Altitude: alt})
 			}
+		case dns.TypeSRV:
+			priority, weight, port, target, _ := getSRVRecord(db, q.Name)
+			if priority != 0 && weight != 0 && port != 0 && target != "" {
+				r.Answer = append(r.Answer, &dns.SRV{Hdr: hdr, Priority: priority, Weight: weight, Port: port, Target: target})
+			}
 		default:
 			r.Rcode = dns.RcodeNameError
 		}

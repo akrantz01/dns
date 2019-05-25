@@ -150,3 +150,38 @@ func getLOCRecord(db *bolt.DB, qname string) (uint8, uint8, uint8, uint8, uint32
 
 	return version, size, horiz, vert, lat, long, alt, err
 }
+
+func getSRVRecord(db *bolt.DB, qname string) (uint16, uint16, uint16, string, error) {
+	var (
+		priority uint16
+		weight uint16
+		port uint16
+		target string
+	)
+
+	err := db.View(func(tx *bolt.Tx) error {
+		records := tx.Bucket([]byte("SRV"))
+		shortenedName := qname[:len(qname) - 1]
+
+		priorityValue := records.Get([]byte(shortenedName + "-priority"))
+		if len(priorityValue) != 0 {
+			priority = binary.BigEndian.Uint16(priorityValue)
+		}
+		weightValue := records.Get([]byte(shortenedName + "-weight"))
+		if len(weightValue) != 0 {
+			weight = binary.BigEndian.Uint16(weightValue)
+		}
+		portValue := records.Get([]byte(shortenedName + "-port"))
+		if len(portValue) != 0 {
+			port = binary.BigEndian.Uint16(portValue)
+		}
+		targetValue := records.Get([]byte(shortenedName + "-target"))
+		if len(targetValue) != 0 {
+			target = string(targetValue)
+		}
+
+		return nil
+	})
+
+	return priority, weight, port, target, err
+}
