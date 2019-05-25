@@ -266,3 +266,20 @@ func getCAARecord(db *bolt.DB, qname string) (uint8, string, string, error) {
 
 	return 0, tag, content, err
 }
+
+func getPTRRecord(db *bolt.DB, qname string) (string, error) {
+	var ptr string
+
+	err := db.View(func(tx *bolt.Tx) error {
+		records := tx.Bucket([]byte("PTR"))
+
+		value := records.Get([]byte(qname[:len(qname) - 1]))
+		if len(value) != 0 {
+			ptr = string(value)
+		}
+
+		return nil
+	})
+
+	return ptr, err
+}

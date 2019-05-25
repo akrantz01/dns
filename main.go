@@ -71,6 +71,11 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 			if flag == 0 && tag != "" && content != "" {
 				r.Answer = append(r.Answer, &dns.CAA{Hdr: hdr, Flag: flag, Tag: tag, Value: content})
 			}
+		case dns.TypePTR:
+			ptr, _ := getPTRRecord(db, q.Name)
+			if ptr != "" {
+				r.Answer = append(r.Answer, &dns.PTR{Hdr: hdr, Ptr: ptr})
+			}
 		default:
 			r.Rcode = dns.RcodeNameError
 		}
