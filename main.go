@@ -1,7 +1,10 @@
 package main
 
 import (
+	"flag"
 	"github.com/miekg/dns"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	bolt "go.etcd.io/bbolt"
 	"log"
 	"time"
@@ -67,9 +70,9 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 				r.Answer = append(r.Answer, &dns.NS{Hdr: hdr, Ns: nameserver})
 			}
 		case dns.TypeCAA:
-			flag, tag, content := getCAARecord(db, q.Name)
+			dflag, tag, content := getCAARecord(db, q.Name)
 			if tag != "" && content != "" {
-				r.Answer = append(r.Answer, &dns.CAA{Hdr: hdr, Flag: flag, Tag: tag, Value: content})
+				r.Answer = append(r.Answer, &dns.CAA{Hdr: hdr, Flag: dflag, Tag: tag, Value: content})
 			}
 		case dns.TypePTR:
 			ptr := getPTRRecord(db, q.Name)
@@ -92,9 +95,9 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 				r.Answer = append(r.Answer, &dns.DS{Hdr: hdr, KeyTag: ktag, Algorithm: algo, DigestType: dtype, Digest: digest})
 			}
 		case dns.TypeNAPTR:
-			ord, pref, flag, serv, reg, rep := getNAPTRRecord(db, q.Name)
+			ord, pref, dflag, serv, reg, rep := getNAPTRRecord(db, q.Name)
 			if serv != "" && reg != "" && rep != "" {
-				r.Answer = append(r.Answer, &dns.NAPTR{Hdr: hdr, Order: ord, Preference: pref, Flags: flag, Service: serv, Regexp: reg, Replacement: rep})
+				r.Answer = append(r.Answer, &dns.NAPTR{Hdr: hdr, Order: ord, Preference: pref, Flags: dflag, Service: serv, Regexp: reg, Replacement: rep})
 			}
 		case dns.TypeSMIMEA:
 			usage, sel, match, cert := getSMIMEARecord(db, q.Name)
@@ -133,9 +136,45 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 }
 
 func main() {
+	// Configuration setup
+	viper.SetConfigName("config")
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("$HOME")
+
+	// Setup environment variables
+	viper.SetEnvPrefix("dns")
+	if err := viper.BindEnv("host", "port", "database", "tcp", "udp"); err != nil { log.Fatalf("Failed to setup environment variables: %v", err) }
+
+	// Setup command line
+	flag.String("host", "127.0.0.1", "IP address to run on")
+	flag.Int("port", 53, "Port to listen on")
+	flag.String("database", "./records.db", "Database file to use")
+	flag.Bool("no-tcp", false, "Disable listening on TCP")
+	flag.Bool("no-udp", false, "Disable listening on UDP")
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.Parse()
+	if err := viper.BindPFlags(pflag.CommandLine); err != nil { log.Fatalf("Failed to setup command line arguments: %v", err) }
+
+	// Set configuration defaults
+	viper.SetDefault("host", "127.0.0.1")
+	viper.SetDefault("port", 53)
+	viper.SetDefault("database", "./records.db")
+	viper.SetDefault("no-tcp", false)
+	viper.SetDefault("no-udp", false)
+
+	// Parse configuration
+	if err := viper.ReadInConfig(); err != nil {
+		switch err.(type) {
+		case viper.ConfigFileNotFoundError:
+			break
+		default:
+			log.Fatalf("Failed to read server configuration: %v", err)
+		}
+	}
+
 	// Open database
 	var err error
-	db, err = bolt.Open("records.db", 0666, nil)
+	db, err = bolt.Open(viper.GetString("database"), 0666, nil)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
@@ -146,10 +185,14 @@ func main() {
 		log.Fatalf("Failed setting up database structure: %v", err)
 	}
 
+	// Check config is valid
+	if viper.GetBool("no-tcp") && viper.GetBool("no-udp") { log.Fatalf("Invalid configuration: tcp and/or udp must be enabled, got both as disabled") }
+
 	// Handle TCP connections
 	tcpErr := make(chan error)
 	go func() {
-		tcp := &dns.Server{Addr: "127.0.0.1:1053", Net: "tcp"}
+		if viper.GetBool("no-tcp") { return }
+		tcp := &dns.Server{Addr: viper.GetString("host") + ":" + viper.GetString("port"), Net: "tcp"}
 		tcp.Handler = &handler{}
 
 		if err := tcp.ListenAndServe(); err != nil { tcpErr <- err }
@@ -158,13 +201,22 @@ func main() {
 	// Handle UDP connections
 	udpErr := make(chan error)
 	go func() {
-		udp := &dns.Server{Addr: "127.0.0.1:1053", Net: "udp"}
+		if viper.GetBool("no-udp") { return }
+		udp := &dns.Server{Addr: viper.GetString("host") + ":" + viper.GetString("port"), Net: "udp"}
 		udp.Handler = &handler{}
 
 		if err := udp.ListenAndServe(); err != nil { udpErr <- err }
 	}()
 
-	log.Println("Listening on 127.0.0.1:1053 with TCP and UDP...")
+	var protocols string
+	if !viper.GetBool("no-udp") && !viper.GetBool("no-tcp") {
+		protocols = "TCP and UDP"
+	} else if viper.GetBool("no-udp") {
+		protocols = "TCP"
+	} else {
+		protocols = "UDP"
+	}
+	log.Printf("Listening on %s:%s with %s...", viper.GetString("host"), viper.GetString("port"), protocols)
 
 	// Watch for errors
 	select {
