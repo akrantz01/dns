@@ -22,3 +22,19 @@ func ConvertArrayToString(iarr []interface{}) ([]string, error) {
 
 	return strings, nil
 }
+
+// Remove duplicates from array
+func RemoveDuplicates(arr []string) []string {
+	// Get all elements, harmlessly overwrite if already exists
+	encountered := map[string]bool{}
+	for _, v := range arr {
+		encountered[v] = true
+	}
+
+	// Iterate over keys and add to result
+	var result []string
+	for key := range encountered {
+		result = append(result, key)
+	}
+	return result
+}

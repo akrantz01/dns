@@ -12,7 +12,22 @@ import (
 	"strings"
 )
 
-func CreateRecord(w http.ResponseWriter, r *http.Request) {
+func RecordsHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		list(w, r)
+		return
+	case "POST":
+		create(w, r)
+		return
+	default:
+		util.Responses.Error(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+}
+
+// Handle the creation of records
+func create(w http.ResponseWriter, r *http.Request) {
 	// Validate initial request with request type, body exists, and content type
 	if r.Method != "POST" {
 		util.Responses.Error(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -113,8 +128,8 @@ func CreateRecord(w http.ResponseWriter, r *http.Request) {
 			priority := make([]byte, binary.MaxVarintLen16)
 			binary.BigEndian.PutUint16(priority, uint16(body["priority"].(float64)))
 			// Write data to bucket
-			if err := records.Put([]byte(body["name"].(string) + "-priority"), priority); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-host"), []byte(body["host"].(string))); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*priority"), priority); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*host"), []byte(body["host"].(string))); err != nil { return err }
 			return nil
 		}); err != nil {
 			util.Responses.Error(w, http.StatusBadRequest, "failed to write record to database: " + err.Error())
@@ -172,13 +187,13 @@ func CreateRecord(w http.ResponseWriter, r *http.Request) {
 			binary.BigEndian.PutUint32(longitude, uint32(body["latitude"].(float64)))
 			binary.BigEndian.PutUint32(altitude, uint32(body["altitude"].(float64)))
 			// Write data to bucket
-			if err := records.Put([]byte(body["name"].(string) + "-version"), []byte{uint8(body["version"].(float64))}); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-size"), []byte{uint8(body["size"].(float64))}); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-horiz"), []byte{uint8(body["horizontal-precision"].(float64))}); err != nil { return  err }
-			if err := records.Put([]byte(body["name"].(string) + "-vert"), []byte{uint8(body["vertical-precision"].(float64))}); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-lat"), latitude); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-long"), longitude); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-alt"), altitude); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*version"), []byte{uint8(body["version"].(float64))}); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*size"), []byte{uint8(body["size"].(float64))}); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*horiz"), []byte{uint8(body["horizontal-precision"].(float64))}); err != nil { return  err }
+			if err := records.Put([]byte(body["name"].(string) + "*vert"), []byte{uint8(body["vertical-precision"].(float64))}); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*lat"), latitude); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*long"), longitude); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*alt"), altitude); err != nil { return err }
 			return nil
 		}); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: " + err.Error())
@@ -219,10 +234,10 @@ func CreateRecord(w http.ResponseWriter, r *http.Request) {
 			binary.BigEndian.PutUint16(weight, uint16(body["weight"].(float64)))
 			binary.BigEndian.PutUint16(port, uint16(body["port"].(float64)))
 			// Write data to bucket
-			if err := records.Put([]byte(body["name"].(string) + "-priority"), priority); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-weight"), weight); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-port"), port); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-target"), []byte(body["target"].(string))); err != nil { return err}
+			if err := records.Put([]byte(body["name"].(string) + "*priority"), priority); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*weight"), weight); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*port"), port); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*target"), []byte(body["target"].(string))); err != nil { return err}
 			return nil
 		}); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: " + err.Error())
@@ -315,8 +330,8 @@ func CreateRecord(w http.ResponseWriter, r *http.Request) {
 			return
 		} else if err := db.Update(func(tx *bbolt.Tx) error {
 			records := tx.Bucket([]byte("CAA"))
-			if err := records.Put([]byte(body["name"].(string) + "-tag"), []byte(body["tag"].(string))); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-content"), []byte(body["content"].(string))); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*tag"), []byte(body["tag"].(string))); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*content"), []byte(body["content"].(string))); err != nil { return err }
 			return nil
 		}); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: " + err.Error())
@@ -369,10 +384,10 @@ func CreateRecord(w http.ResponseWriter, r *http.Request) {
 			binary.BigEndian.PutUint16(ctype, uint16(body["c-type"].(float64)))
 			binary.BigEndian.PutUint16(keytag, uint16(body["key-tag"].(float64)))
 			// Write data to bucket
-			if err := records.Put([]byte(body["name"].(string) + "-type"), ctype); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-keytag"), keytag); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-algorithm"), []byte{uint8(body["algorithm"].(float64))}); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-certificate"), []byte(body["certificate"].(string))); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*type"), ctype); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*keytag"), keytag); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*algorithm"), []byte{uint8(body["algorithm"].(float64))}); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*certificate"), []byte(body["certificate"].(string))); err != nil { return err }
 			return nil
 		}); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: " + err.Error())
@@ -408,10 +423,10 @@ func CreateRecord(w http.ResponseWriter, r *http.Request) {
 			// Convert uint16 to binary
 			flags := make([]byte, binary.MaxVarintLen16)
 			binary.BigEndian.PutUint16(flags, uint16(body["flags"].(float64)))
-			if err := records.Put([]byte(body["name"].(string) + "-flags"), flags); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-protocol"), []byte{uint8(body["protocol"].(float64))}); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-algorithm"), []byte{uint8(body["algorithm"].(float64))}); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-publickey"), []byte(body["public-key"].(string))); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*flags"), flags); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*protocol"), []byte{uint8(body["protocol"].(float64))}); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*algorithm"), []byte{uint8(body["algorithm"].(float64))}); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*publickey"), []byte(body["public-key"].(string))); err != nil { return err }
 			return nil
 		}); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: " + err.Error())
@@ -447,10 +462,10 @@ func CreateRecord(w http.ResponseWriter, r *http.Request) {
 			// Convert uint16 to binary
 			flags := make([]byte, binary.MaxVarintLen16)
 			binary.BigEndian.PutUint16(flags, uint16(body["key-tag"].(float64)))
-			if err := records.Put([]byte(body["name"].(string) + "-keytag"), flags); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-algorithm"), []byte{uint8(body["algorithm"].(float64))}); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-digesttype"), []byte{uint8(body["digest-type"].(float64))}); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-digest"), []byte(body["digest"].(string))); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*keytag"), flags); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*algorithm"), []byte{uint8(body["algorithm"].(float64))}); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*digesttype"), []byte{uint8(body["digest-type"].(float64))}); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*digest"), []byte(body["digest"].(string))); err != nil { return err }
 			return nil
 		}); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: " + err.Error())
@@ -501,12 +516,12 @@ func CreateRecord(w http.ResponseWriter, r *http.Request) {
 			binary.BigEndian.PutUint16(order, uint16(body["order"].(float64)))
 			binary.BigEndian.PutUint16(preference, uint16(body["preference"].(float64)))
 			// Write data to bucket
-			if err := records.Put([]byte(body["name"].(string) + "-order"), order); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-preference"), preference); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-flags"), []byte(body["flags"].(string))); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-service"), []byte(body["service"].(string))); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-regexp"), []byte(body["regexp"].(string))); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-replacement"), []byte(body["replacement"].(string))); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*order"), order); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*preference"), preference); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*flags"), []byte(body["flags"].(string))); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*service"), []byte(body["service"].(string))); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*regexp"), []byte(body["regexp"].(string))); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*replacement"), []byte(body["replacement"].(string))); err != nil { return err }
 			return nil
 		}); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: " + err.Error())
@@ -539,10 +554,10 @@ func CreateRecord(w http.ResponseWriter, r *http.Request) {
 			return
 		} else if err := db.Update(func(tx *bbolt.Tx) error {
 			records := tx.Bucket([]byte("SMIMEA"))
-			if err := records.Put([]byte(body["name"].(string) + "-usage"), []byte{uint8(body["usage"].(float64))}); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-selector"), []byte{uint8(body["selector"].(float64))}); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-matching"), []byte{uint8(body["matching-type"].(float64))}); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-certificate"), []byte(body["certificate"].(string))); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*usage"), []byte{uint8(body["usage"].(float64))}); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*selector"), []byte{uint8(body["selector"].(float64))}); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*matching"), []byte{uint8(body["matching-type"].(float64))}); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*certificate"), []byte(body["certificate"].(string))); err != nil { return err }
 			return nil
 		}); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: " + err.Error())
@@ -569,9 +584,9 @@ func CreateRecord(w http.ResponseWriter, r *http.Request) {
 			return
 		} else if err := db.Update(func(tx *bbolt.Tx) error {
 			records := tx.Bucket([]byte("SSHFP"))
-			if err := records.Put([]byte(body["name"].(string) + "-algorithm"), []byte{uint8(body["algorithm"].(float64))}); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-type"), []byte{uint8(body["s-type"].(float64))}); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-fingerprint"), []byte(body["fingerprint"].(string))); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*algorithm"), []byte{uint8(body["algorithm"].(float64))}); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*type"), []byte{uint8(body["s-type"].(float64))}); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*fingerprint"), []byte(body["fingerprint"].(string))); err != nil { return err }
 			return nil
 		}); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: " + err.Error())
@@ -604,10 +619,10 @@ func CreateRecord(w http.ResponseWriter, r *http.Request) {
 			return
 		} else if err := db.Update(func(tx *bbolt.Tx) error {
 			records := tx.Bucket([]byte("TLSA"))
-			if err := records.Put([]byte(body["name"].(string) + "-usage"), []byte{uint8(body["usage"].(float64))}); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-selector"), []byte{uint8(body["selector"].(float64))}); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-matching"), []byte{uint8(body["matching-type"].(float64))}); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-certificate"), []byte(body["certificate"].(string))); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*usage"), []byte{uint8(body["usage"].(float64))}); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*selector"), []byte{uint8(body["selector"].(float64))}); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*matching"), []byte{uint8(body["matching-type"].(float64))}); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*certificate"), []byte(body["certificate"].(string))); err != nil { return err }
 			return nil
 		}); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: " + err.Error())
@@ -640,9 +655,9 @@ func CreateRecord(w http.ResponseWriter, r *http.Request) {
 			binary.BigEndian.PutUint16(priority, uint16(body["priority"].(float64)))
 			binary.BigEndian.PutUint16(weight, uint16(body["weight"].(float64)))
 			// Write data to bucket
-			if err := records.Put([]byte(body["name"].(string) + "-priority"), priority); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-weight"), weight); err != nil { return err }
-			if err := records.Put([]byte(body["name"].(string) + "-target"), []byte(body["target"].(string))); err != nil { return err}
+			if err := records.Put([]byte(body["name"].(string) + "*priority"), priority); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*weight"), weight); err != nil { return err }
+			if err := records.Put([]byte(body["name"].(string) + "*target"), []byte(body["target"].(string))); err != nil { return err}
 			return nil
 		}); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: " + err.Error())
@@ -654,4 +669,48 @@ func CreateRecord(w http.ResponseWriter, r *http.Request) {
 	}
 
 	util.Responses.Success(w)
+}
+
+// Handle the listing of all records
+func list(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		util.Responses.Error(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	records := map[string][]string{
+		"A":      {},
+		"AAAA":   {},
+		"CNAME":  {},
+		"MX":     {},
+		"LOC":    {},
+		"SRV":    {},
+		"SPF":    {},
+		"TXT":    {},
+		"NS":     {},
+		"CAA":    {},
+		"PTR":    {},
+		"CERT":   {},
+		"DNSKEY": {},
+		"DS":     {},
+		"NAPTR":  {},
+		"SMIMEA": {},
+		"SSHFP":  {},
+		"TLSA":   {},
+		"URI":    {},
+	}
+	for record := range records {
+		if err := db.View(func(tx *bbolt.Tx) error {
+			return tx.Bucket([]byte(record)).ForEach(func(k, v []byte) error {
+				records[record] = append(records[record], strings.Split(string(k), "*")[0])
+				return nil
+			})
+		}); err != nil {
+			util.Responses.Error(w, http.StatusInternalServerError, "failed to retrieve all records: " + err.Error())
+			return
+		}
+		records[record] = util.RemoveDuplicates(records[record])
+	}
+
+	util.Responses.SuccessWithData(w, records)
 }

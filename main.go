@@ -215,7 +215,7 @@ func main() {
 	// Handle REST API
 	httpErr := make(chan error)
 	go func() {
-		http.Handle("/records", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(CreateRecord)))
+		http.Handle("/records", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(RecordsHandler)))
 		if err := http.ListenAndServe("127.0.0.1:8080", nil); err != nil { httpErr <- err }
 	}()
 
