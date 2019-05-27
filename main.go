@@ -3,12 +3,14 @@ package main
 import (
 	"flag"
 	"github.com/akrantz01/krantz.dev/dns/util"
+	"github.com/gorilla/handlers"
 	"github.com/miekg/dns"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	bolt "go.etcd.io/bbolt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -213,7 +215,7 @@ func main() {
 	// Handle REST API
 	httpErr := make(chan error)
 	go func() {
-		http.HandleFunc("/", CreateRecord)
+		http.Handle("/records", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(CreateRecord)))
 		if err := http.ListenAndServe("127.0.0.1:8080", nil); err != nil { httpErr <- err }
 	}()
 
