@@ -1,4 +1,4 @@
-package main
+package routes
 
 import (
 	"bytes"
@@ -6,28 +6,14 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"github.com/akrantz01/krantz.dev/dns/util"
-	"go.etcd.io/bbolt"
+	bolt "go.etcd.io/bbolt"
 	"net"
 	"net/http"
 	"strings"
 )
 
-func RecordsHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "GET":
-		list(w, r)
-		return
-	case "POST":
-		create(w, r)
-		return
-	default:
-		util.Responses.Error(w, http.StatusMethodNotAllowed, "method not allowed")
-		return
-	}
-}
-
 // Handle the creation of records
-func create(w http.ResponseWriter, r *http.Request) {
+func create(w http.ResponseWriter, r *http.Request, db *bolt.DB) {
 	// Validate initial request with request type, body exists, and content type
 	if r.Method != "POST" {
 		util.Responses.Error(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -71,7 +57,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		} else if ip := net.ParseIP(body["host"].(string)); ip.To4().String() == "<nil>" {
 			util.Responses.Error(w, http.StatusBadRequest, "field 'host' must be an IPv4 address")
 			return
-		} else if err := db.Update(func(tx *bbolt.Tx) error {
+		} else if err := db.Update(func(tx *bolt.Tx) error {
 			records := tx.Bucket([]byte("A"))
 			return records.Put([]byte(body["name"].(string)), []byte(body["host"].(string)))
 		}); err != nil {
@@ -88,7 +74,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		} else if ip := net.ParseIP(body["host"].(string)); ip.To4().String() != "<nil>" {
 			util.Responses.Error(w, http.StatusBadRequest, "field 'host' must be an IPv6 address")
 			return
-		} else if err := db.Update(func(tx *bbolt.Tx) error {
+		} else if err := db.Update(func(tx *bolt.Tx) error {
 			records := tx.Bucket([]byte("AAAA"))
 			return records.Put([]byte(body["name"].(string)), []byte(body["host"].(string)))
 		}); err != nil {
@@ -102,7 +88,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		} else if !util.Types.String(body["target"]) {
 			util.Responses.Error(w, http.StatusBadRequest, "field 'target' must be a string")
 			return
-		} else if err := db.Update(func(tx *bbolt.Tx) error {
+		} else if err := db.Update(func(tx *bolt.Tx) error {
 			records := tx.Bucket([]byte("CNAME"))
 			return records.Put([]byte(body["name"].(string)), []byte(body["target"].(string)))
 		}); err != nil {
@@ -122,7 +108,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		} else if !util.Types.Uint16(body["priority"]) {
 			util.Responses.Error(w, http.StatusBadRequest, "field 'priority' must be an integer between 0 and 65535")
 			return
-		} else if err := db.Update(func(tx *bbolt.Tx) error {
+		} else if err := db.Update(func(tx *bolt.Tx) error {
 			records := tx.Bucket([]byte("MX"))
 			// Convert uint16 to binary
 			priority := make([]byte, binary.MaxVarintLen16)
@@ -177,7 +163,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 			return
 		} else if !util.Types.Uint32(body["altitude"]) {
 			util.Responses.Error(w, http.StatusBadRequest, "field 'altitude' must be an integer between 0 and 4294967295")
-		} else if err := db.Update(func(tx *bbolt.Tx) error {
+		} else if err := db.Update(func(tx *bolt.Tx) error {
 			records := tx.Bucket([]byte("LOC"))
 			// Convert uint32s to binary
 			latitude := make([]byte, binary.MaxVarintLen32)
@@ -224,7 +210,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		} else if !util.Types.String(body["target"]) {
 			util.Responses.Error(w, http.StatusBadRequest, "field 'target' must be a string")
 			return
-		} else if err := db.Update(func(tx *bbolt.Tx) error {
+		} else if err := db.Update(func(tx *bolt.Tx) error {
 			records := tx.Bucket([]byte("SRV"))
 			// Convert uint16s to binary
 			priority := make([]byte, binary.MaxVarintLen16)
@@ -255,7 +241,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		if len(text) < 1 {
 			util.Responses.Error(w, http.StatusBadRequest, "field 'text' must a length of length 1")
 			return
-		} else if err := db.Update(func(tx *bbolt.Tx) error {
+		} else if err := db.Update(func(tx *bolt.Tx) error {
 			// Get proper size of buffer
 			size := 0
 			for _, t := range text {
@@ -284,7 +270,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		if len(text) < 1 {
 			util.Responses.Error(w, http.StatusBadRequest, "field 'text' must a length of length 1")
 			return
-		} else if err := db.Update(func(tx *bbolt.Tx) error {
+		} else if err := db.Update(func(tx *bolt.Tx) error {
 			// Get proper size of buffer
 			size := 0
 			for _, t := range text {
@@ -308,7 +294,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		} else if !util.Types.String(body["nameserver"]) {
 			util.Responses.Error(w, http.StatusBadRequest, "field 'nameserver' must be a string")
 			return
-		} else if err := db.Update(func(tx *bbolt.Tx) error {
+		} else if err := db.Update(func(tx *bolt.Tx) error {
 			records := tx.Bucket([]byte("NS"))
 			return records.Put([]byte(body["name"].(string)), []byte(body["nameserver"].(string)))
 		}); err != nil {
@@ -328,7 +314,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		} else if !util.Types.String(body["content"]) {
 			util.Responses.Error(w, http.StatusBadRequest, "field 'content' must be a string")
 			return
-		} else if err := db.Update(func(tx *bbolt.Tx) error {
+		} else if err := db.Update(func(tx *bolt.Tx) error {
 			records := tx.Bucket([]byte("CAA"))
 			if err := records.Put([]byte(body["name"].(string) + "*tag"), []byte(body["tag"].(string))); err != nil { return err }
 			if err := records.Put([]byte(body["name"].(string) + "*content"), []byte(body["content"].(string))); err != nil { return err }
@@ -344,7 +330,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		} else if !util.Types.String(body["domain"]) {
 			util.Responses.Error(w, http.StatusBadRequest, "field 'domain' must be a string")
 			return
-		} else if err := db.Update(func(tx *bbolt.Tx) error {
+		} else if err := db.Update(func(tx *bolt.Tx) error {
 			records := tx.Bucket([]byte("PTR"))
 			return records.Put([]byte(body["name"].(string)), []byte(body["domain"].(string)))
 		}); err != nil {
@@ -376,7 +362,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		} else if !util.Types.String(body["certificate"]) {
 			util.Responses.Error(w, http.StatusBadRequest, "field 'certificate' must be a string")
 			return
-		} else if err := db.Update(func(tx *bbolt.Tx) error {
+		} else if err := db.Update(func(tx *bolt.Tx) error {
 			records := tx.Bucket([]byte("CERT"))
 			// Convert uint16s to binary
 			ctype := make([]byte, binary.MaxVarintLen16)
@@ -418,7 +404,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		} else if !util.Types.String(body["public-key"]) {
 			util.Responses.Error(w, http.StatusBadRequest, "field 'public-key' must be a string")
 			return
-		} else if err := db.Update(func(tx *bbolt.Tx) error {
+		} else if err := db.Update(func(tx *bolt.Tx) error {
 			records := tx.Bucket([]byte("DNSKEY"))
 			// Convert uint16 to binary
 			flags := make([]byte, binary.MaxVarintLen16)
@@ -457,7 +443,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		} else if !util.Types.String(body["digest"]) {
 			util.Responses.Error(w, http.StatusBadRequest, "field 'digest' must be a string")
 			return
-		} else if err := db.Update(func(tx *bbolt.Tx) error {
+		} else if err := db.Update(func(tx *bolt.Tx) error {
 			records := tx.Bucket([]byte("DS"))
 			// Convert uint16 to binary
 			flags := make([]byte, binary.MaxVarintLen16)
@@ -508,7 +494,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		} else if !util.Types.String(body["replacement"]) {
 			util.Responses.Error(w, http.StatusBadRequest, "field 'replacement' must be a string")
 			return
-		} else if err := db.Update(func(tx *bbolt.Tx) error {
+		} else if err := db.Update(func(tx *bolt.Tx) error {
 			records := tx.Bucket([]byte("NAPTR"))
 			// Convert uint16s to binary
 			order := make([]byte, binary.MaxVarintLen16)
@@ -552,7 +538,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		} else if !util.Types.String(body["certificate"]) {
 			util.Responses.Error(w, http.StatusBadRequest, "field 'certificate' must be a string")
 			return
-		} else if err := db.Update(func(tx *bbolt.Tx) error {
+		} else if err := db.Update(func(tx *bolt.Tx) error {
 			records := tx.Bucket([]byte("SMIMEA"))
 			if err := records.Put([]byte(body["name"].(string) + "*usage"), []byte{uint8(body["usage"].(float64))}); err != nil { return err }
 			if err := records.Put([]byte(body["name"].(string) + "*selector"), []byte{uint8(body["selector"].(float64))}); err != nil { return err }
@@ -582,7 +568,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		} else if !util.Types.String(body["fingerprint"]) {
 			util.Responses.Error(w, http.StatusBadRequest, "field 'fingerprint' must be a string")
 			return
-		} else if err := db.Update(func(tx *bbolt.Tx) error {
+		} else if err := db.Update(func(tx *bolt.Tx) error {
 			records := tx.Bucket([]byte("SSHFP"))
 			if err := records.Put([]byte(body["name"].(string) + "*algorithm"), []byte{uint8(body["algorithm"].(float64))}); err != nil { return err }
 			if err := records.Put([]byte(body["name"].(string) + "*type"), []byte{uint8(body["s-type"].(float64))}); err != nil { return err }
@@ -617,7 +603,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		} else if !util.Types.String(body["certificate"]) {
 			util.Responses.Error(w, http.StatusBadRequest, "field 'certificate' must be a string")
 			return
-		} else if err := db.Update(func(tx *bbolt.Tx) error {
+		} else if err := db.Update(func(tx *bolt.Tx) error {
 			records := tx.Bucket([]byte("TLSA"))
 			if err := records.Put([]byte(body["name"].(string) + "*usage"), []byte{uint8(body["usage"].(float64))}); err != nil { return err }
 			if err := records.Put([]byte(body["name"].(string) + "*selector"), []byte{uint8(body["selector"].(float64))}); err != nil { return err }
@@ -647,7 +633,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		} else if !util.Types.String(body["target"]) {
 			util.Responses.Error(w, http.StatusBadRequest, "field 'target' must be a string")
 			return
-		} else if err := db.Update(func(tx *bbolt.Tx) error {
+		} else if err := db.Update(func(tx *bolt.Tx) error {
 			records := tx.Bucket([]byte("URI"))
 			// Convert uint16s to binary
 			priority := make([]byte, binary.MaxVarintLen16)
@@ -669,71 +655,4 @@ func create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	util.Responses.Success(w)
-}
-
-// Handle the listing of all records
-func list(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "GET" {
-		util.Responses.Error(w, http.StatusMethodNotAllowed, "method not allowed")
-		return
-	} else if len(r.URL.RawQuery) != 0 {
-		if _, ok := r.URL.Query()["type"]; !ok {
-			util.Responses.Error(w, http.StatusBadRequest, "query parameter 'type' is required for type filtering")
-			return
-		}
-
-		records := make(map[string][]string)
-		for _, record := range r.URL.Query()["type"] {
-			records[record] = []string{}
-			if err := db.View(func(tx *bbolt.Tx) error {
-				return tx.Bucket([]byte(record)).ForEach(func(k, v []byte) error {
-					records[record] = append(records[record], strings.Split(string(k), "*")[0])
-					return nil
-				})
-			}); err != nil {
-				util.Responses.Error(w, http.StatusInternalServerError, "failed to retrieve all records: " + err.Error())
-				return
-			}
-			records[record] = util.RemoveDuplicates(records[record])
-		}
-
-		util.Responses.SuccessWithData(w, records)
-		return
-	}
-
-	records := map[string][]string{
-		"A":      {},
-		"AAAA":   {},
-		"CNAME":  {},
-		"MX":     {},
-		"LOC":    {},
-		"SRV":    {},
-		"SPF":    {},
-		"TXT":    {},
-		"NS":     {},
-		"CAA":    {},
-		"PTR":    {},
-		"CERT":   {},
-		"DNSKEY": {},
-		"DS":     {},
-		"NAPTR":  {},
-		"SMIMEA": {},
-		"SSHFP":  {},
-		"TLSA":   {},
-		"URI":    {},
-	}
-	for record := range records {
-		if err := db.View(func(tx *bbolt.Tx) error {
-			return tx.Bucket([]byte(record)).ForEach(func(k, v []byte) error {
-				records[record] = append(records[record], strings.Split(string(k), "*")[0])
-				return nil
-			})
-		}); err != nil {
-			util.Responses.Error(w, http.StatusInternalServerError, "failed to retrieve all records: " + err.Error())
-			return
-		}
-		records[record] = util.RemoveDuplicates(records[record])
-	}
-
-	util.Responses.SuccessWithData(w, records)
 }
