@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 )
 
 // From CoreDNS logging plugin
-func logResponse(w dns.ResponseWriter, r *dns.Msg, start time.Time) {
+func LogResponse(w dns.ResponseWriter, r *dns.Msg, start time.Time) {
 	state := request.Request{W: w, Req: r}
 
 	fmt.Printf("%s %s:%s - %s \"%s %s %s %s %s %s %s\" %s %s %s %s\n",

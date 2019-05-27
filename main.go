@@ -2,11 +2,13 @@ package main
 
 import (
 	"flag"
+	"github.com/akrantz01/krantz.dev/dns/util"
 	"github.com/miekg/dns"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	bolt "go.etcd.io/bbolt"
 	"log"
+	"net/http"
 	"time"
 )
 
@@ -132,7 +134,7 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 		log.Printf("Unable to send response: %v", err)
 	}
 
-	logResponse(w, r, start)
+	util.LogResponse(w, r, start)
 }
 
 func main() {
@@ -208,6 +210,14 @@ func main() {
 		if err := udp.ListenAndServe(); err != nil { udpErr <- err }
 	}()
 
+	// Handle REST API
+	httpErr := make(chan error)
+	go func() {
+		http.HandleFunc("/", CreateRecord)
+		if err := http.ListenAndServe("127.0.0.1:8080", nil); err != nil { httpErr <- err }
+	}()
+
+	// Assemble log
 	var protocols string
 	if !viper.GetBool("no-udp") && !viper.GetBool("no-tcp") {
 		protocols = "TCP and UDP"
@@ -216,13 +226,16 @@ func main() {
 	} else {
 		protocols = "UDP"
 	}
-	log.Printf("Listening on %s:%s with %s...", viper.GetString("host"), viper.GetString("port"), protocols)
+	log.Printf("DNS server listening on %s:%s with %s...", viper.GetString("host"), viper.GetString("port"), protocols)
+	log.Printf("HTTP server listening on 127.0.0.1:8080...")
 
 	// Watch for errors
 	select {
 	case err := <- tcpErr:
-		log.Fatalf("Failed to listen on 127.0.0.1:1052 with TCP: %v\n", err)
+		log.Fatalf("DNS failed to listen on 127.0.0.1:1052 with TCP: %v\n", err)
 	case err := <- udpErr:
-		log.Fatalf("Failed to listen on 127.0.0.1:1053 with UDP: %v\n", err)
+		log.Fatalf("DNS failed to listen on 127.0.0.1:1053 with UDP: %v\n", err)
+	case err := <- httpErr:
+		log.Fatalf("API failed to listen on 127.0.0.1:8080: %v\n", err)
 	}
 }
