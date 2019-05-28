@@ -1,4 +1,4 @@
-package main
+package db
 
 import (
 	"bytes"
@@ -9,32 +9,7 @@ import (
 	"net"
 )
 
-func setupDB(db *bolt.DB) error {
-	return db.Update(func(tx *bolt.Tx) error {
-		if _, err := tx.CreateBucketIfNotExists([]byte("A")); err != nil { return err }
-		if _, err := tx.CreateBucketIfNotExists([]byte("AAAA")); err != nil { return err }
-		if _, err := tx.CreateBucketIfNotExists([]byte("CNAME")); err != nil { return err }
-		if _, err := tx.CreateBucketIfNotExists([]byte("MX")); err != nil { return err }
-		if _, err := tx.CreateBucketIfNotExists([]byte("LOC")); err != nil { return err }
-		if _, err := tx.CreateBucketIfNotExists([]byte("SRV")); err != nil { return err }
-		if _, err := tx.CreateBucketIfNotExists([]byte("SPF")); err != nil { return err }
-		if _, err := tx.CreateBucketIfNotExists([]byte("TXT")); err != nil { return err }
-		if _, err := tx.CreateBucketIfNotExists([]byte("NS")); err != nil { return err }
-		if _, err := tx.CreateBucketIfNotExists([]byte("CAA")); err != nil { return err }
-		if _, err := tx.CreateBucketIfNotExists([]byte("PTR")); err != nil { return err }
-		if _, err := tx.CreateBucketIfNotExists([]byte("CERT")); err != nil { return err }
-		if _, err := tx.CreateBucketIfNotExists([]byte("DNSKEY")); err != nil { return err }
-		if _, err := tx.CreateBucketIfNotExists([]byte("DS")); err != nil { return err }
-		if _, err := tx.CreateBucketIfNotExists([]byte("NAPTR")); err != nil { return err }
-		if _, err := tx.CreateBucketIfNotExists([]byte("SMIMEA")); err != nil { return err }
-		if _, err := tx.CreateBucketIfNotExists([]byte("SSHFP")); err != nil { return err }
-		if _, err := tx.CreateBucketIfNotExists([]byte("TLSA")); err != nil { return err }
-		if _, err := tx.CreateBucketIfNotExists([]byte("URI")); err != nil { return err }
-		return nil
-	})
-}
-
-func getARecord(db *bolt.DB, qname string) net.IP {
+func GetARecord(db *bolt.DB, qname string) net.IP {
 	var addr net.IP
 
 	if err := db.View(func(tx *bolt.Tx) error {
@@ -47,7 +22,7 @@ func getARecord(db *bolt.DB, qname string) net.IP {
 	return addr
 }
 
-func getAAAARecord(db *bolt.DB, qname string) net.IP {
+func GetAAAARecord(db *bolt.DB, qname string) net.IP {
 	var addr net.IP
 
 	if err := db.View(func(tx *bolt.Tx) error {
@@ -60,7 +35,7 @@ func getAAAARecord(db *bolt.DB, qname string) net.IP {
 	return addr
 }
 
-func getCNAMERecord(db *bolt.DB, qname string) string {
+func GetCNAMERecord(db *bolt.DB, qname string) string {
 	var target string
 
 	if err := db.View(func(tx *bolt.Tx) error {
@@ -73,7 +48,7 @@ func getCNAMERecord(db *bolt.DB, qname string) string {
 	return target
 }
 
-func getMXRecord(db *bolt.DB, qname string) (string, uint16) {
+func GetMXRecord(db *bolt.DB, qname string) (string, uint16) {
 	var (
 		host 		string
 		priority 	uint16
@@ -91,7 +66,7 @@ func getMXRecord(db *bolt.DB, qname string) (string, uint16) {
 	return host, priority
 }
 
-func getLOCRecord(db *bolt.DB, qname string) (uint8, uint8, uint8, uint8, uint32, uint32, uint32) {
+func GetLOCRecord(db *bolt.DB, qname string) (uint8, uint8, uint8, uint8, uint32, uint32, uint32) {
 	var (
 		version	uint8
 		size 	uint8
@@ -119,7 +94,7 @@ func getLOCRecord(db *bolt.DB, qname string) (uint8, uint8, uint8, uint8, uint32
 	return version, size, horiz, vert, lat, long, alt
 }
 
-func getSRVRecord(db *bolt.DB, qname string) (uint16, uint16, uint16, string) {
+func GetSRVRecord(db *bolt.DB, qname string) (uint16, uint16, uint16, string) {
 	var (
 		priority 	uint16
 		weight 		uint16
@@ -141,7 +116,7 @@ func getSRVRecord(db *bolt.DB, qname string) (uint16, uint16, uint16, string) {
 	return priority, weight, port, target
 }
 
-func getSPFRecord(db *bolt.DB, qname string) []string {
+func GetSPFRecord(db *bolt.DB, qname string) []string {
 	var txt []string
 
 	if err := db.View(func(tx *bolt.Tx) error {
@@ -158,7 +133,7 @@ func getSPFRecord(db *bolt.DB, qname string) []string {
 	return txt
 }
 
-func getTXTRecord(db *bolt.DB, qname string) []string {
+func GetTXTRecord(db *bolt.DB, qname string) []string {
 	var content []string
 
 	if err := db.View(func(tx *bolt.Tx) error {
@@ -175,7 +150,7 @@ func getTXTRecord(db *bolt.DB, qname string) []string {
 	return content
 }
 
-func getNSRecord(db *bolt.DB, qname string) string {
+func GetNSRecord(db *bolt.DB, qname string) string {
 	var nameserver string
 
 	if err := db.View(func(tx *bolt.Tx) error {
@@ -188,7 +163,7 @@ func getNSRecord(db *bolt.DB, qname string) string {
 	return nameserver
 }
 
-func getCAARecord(db *bolt.DB, qname string) (uint8, string, string) {
+func GetCAARecord(db *bolt.DB, qname string) (uint8, string, string) {
 	var (
 		tag string
 		content string
@@ -206,7 +181,7 @@ func getCAARecord(db *bolt.DB, qname string) (uint8, string, string) {
 	return 0, tag, content
 }
 
-func getPTRRecord(db *bolt.DB, qname string) string {
+func GetPTRRecord(db *bolt.DB, qname string) string {
 	var ptr string
 
 	if err := db.View(func(tx *bolt.Tx) error {
@@ -219,7 +194,7 @@ func getPTRRecord(db *bolt.DB, qname string) string {
 	return ptr
 }
 
-func getCERTRecord(db *bolt.DB, qname string) (uint16, uint16, uint8, string) {
+func GetCERTRecord(db *bolt.DB, qname string) (uint16, uint16, uint8, string) {
 	var (
 		tpe 	uint16
 		keyTag 	uint16
@@ -241,7 +216,7 @@ func getCERTRecord(db *bolt.DB, qname string) (uint16, uint16, uint8, string) {
 	return tpe, keyTag, algo, cert
 }
 
-func getDNSKEYRecord(db *bolt.DB, qname string) (uint16, uint8, uint8, string) {
+func GetDNSKEYRecord(db *bolt.DB, qname string) (uint16, uint8, uint8, string) {
 	var (
 		flags 	uint16
 		proto 	uint8
@@ -263,7 +238,7 @@ func getDNSKEYRecord(db *bolt.DB, qname string) (uint16, uint8, uint8, string) {
 	return flags, proto, algo, pub
 }
 
-func getDSRecord(db *bolt.DB, qname string) (uint16, uint8, uint8, string) {
+func GetDSRecord(db *bolt.DB, qname string) (uint16, uint8, uint8, string) {
 	var (
 		ktag 	uint16
 		algo 	uint8
@@ -285,7 +260,7 @@ func getDSRecord(db *bolt.DB, qname string) (uint16, uint8, uint8, string) {
 	return ktag, algo, dtype, digest
 }
 
-func getNAPTRRecord(db *bolt.DB, qname string) (uint16, uint16, string, string, string, string) {
+func GetNAPTRRecord(db *bolt.DB, qname string) (uint16, uint16, string, string, string, string) {
 	var (
 		order 		uint16
 		pref 		uint16
@@ -311,7 +286,7 @@ func getNAPTRRecord(db *bolt.DB, qname string) (uint16, uint16, string, string, 
 	return order, pref, flags, service, regexp, replacement
 }
 
-func getSMIMEARecord(db *bolt.DB, qname string) (uint8, uint8, uint8, string) {
+func GetSMIMEARecord(db *bolt.DB, qname string) (uint8, uint8, uint8, string) {
 	var (
 		usage 		uint8
 		selector 	uint8
@@ -333,7 +308,7 @@ func getSMIMEARecord(db *bolt.DB, qname string) (uint8, uint8, uint8, string) {
 	return usage, selector, matching, cert
 }
 
-func getSSHFPRecord(db *bolt.DB, qname string) (uint8, uint8, string) {
+func GetSSHFPRecord(db *bolt.DB, qname string) (uint8, uint8, string) {
 	var (
 		algorithm   uint8
 		tpe         uint8
@@ -353,7 +328,7 @@ func getSSHFPRecord(db *bolt.DB, qname string) (uint8, uint8, string) {
 	return algorithm, tpe, fingerprint
 }
 
-func getTLSARecord(db *bolt.DB, qname string) (uint8, uint8, uint8, string) {
+func GetTLSARecord(db *bolt.DB, qname string) (uint8, uint8, uint8, string) {
 	var (
 		usage       uint8
 		selector    uint8
@@ -375,7 +350,7 @@ func getTLSARecord(db *bolt.DB, qname string) (uint8, uint8, uint8, string) {
 	return usage, selector, matching, certificate
 }
 
-func getURIRecord(db *bolt.DB, qname string) (uint16, uint16, string) {
+func GetURIRecord(db *bolt.DB, qname string) (uint16, uint16, string) {
 	var (
 		priority 	uint16
 		weight 		uint16

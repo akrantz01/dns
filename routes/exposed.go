@@ -6,8 +6,8 @@ import (
 	"net/http"
 )
 
-// Handle GET and POST requests to same route
-func RecordsHandler(db *bolt.DB) func(w http.ResponseWriter, r *http.Request) {
+// Handle requests for methods regarding the entirety of the records
+func AllRecordsHandler(db *bolt.DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
@@ -18,6 +18,17 @@ func RecordsHandler(db *bolt.DB) func(w http.ResponseWriter, r *http.Request) {
 			return
 		default:
 			util.Responses.Error(w, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
+	}
+}
+
+// Handle requests for methods regarding singular records
+func SingleRecordHandler(path string, db *bolt.DB) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "GET":
+			read(w, r, path, db)
 			return
 		}
 	}
