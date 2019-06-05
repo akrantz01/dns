@@ -31,97 +31,97 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 
 		switch q.Qtype {
 		case dns.TypeA:
-			ip := db.GetARecord(database, q.Name)
+			ip := db.Get.A(q.Name)
 			if ip != nil {
 				r.Answer = append(r.Answer, &dns.A{Hdr: hdr, A: ip})
 			}
 		case dns.TypeAAAA:
-			ip := db.GetAAAARecord(database, q.Name)
+			ip := db.Get.AAAA(q.Name)
 			if ip != nil {
 				r.Answer = append(r.Answer, &dns.AAAA{Hdr: hdr, AAAA: ip})
 			}
 		case dns.TypeCNAME:
-			target := db.GetCNAMERecord(database, q.Name)
+			target := db.Get.CNAME(q.Name)
 			if target != "" {
 				r.Answer = append(r.Answer, &dns.CNAME{Hdr: hdr, Target: target})
 			}
 		case dns.TypeMX:
-			host, priority := db.GetMXRecord(database, q.Name)
+			host, priority := db.Get.MX(q.Name)
 			if host != "" {
 				r.Answer = append(r.Answer, &dns.MX{Hdr: hdr, Preference: priority, Mx: host})
 			}
 		case dns.TypeLOC:
-			vers, siz, hor, ver, lat, lon, alt := db.GetLOCRecord(database, q.Name)
+			vers, siz, hor, ver, lat, lon, alt := db.Get.LOC(q.Name)
 			if lat != 0 && lon != 0 {
 				r.Answer = append(r.Answer, &dns.LOC{Hdr: hdr, Version: vers, Size: siz, HorizPre: hor, VertPre: ver, Latitude: lat, Longitude: lon, Altitude: alt})
 			}
 		case dns.TypeSRV:
-			priority, weight, port, target := db.GetSRVRecord(database, q.Name)
+			priority, weight, port, target := db.Get.SRV(q.Name)
 			if target != "" {
 				r.Answer = append(r.Answer, &dns.SRV{Hdr: hdr, Priority: priority, Weight: weight, Port: port, Target: target})
 			}
 		case dns.TypeSPF:
-			txt := db.GetSPFRecord(database, q.Name)
+			txt := db.Get.SPF(q.Name)
 			if len(txt) != 0 {
 				r.Answer = append(r.Answer, &dns.SPF{Hdr: hdr, Txt: txt})
 			}
 		case dns.TypeTXT:
-			content := db.GetTXTRecord(database, q.Name)
+			content := db.Get.TXT(q.Name)
 			if len(content) != 0 {
 				r.Answer = append(r.Answer, &dns.TXT{Hdr: hdr, Txt: content})
 			}
 		case dns.TypeNS:
-			nameserver := db.GetNSRecord(database, q.Name)
+			nameserver := db.Get.NS(q.Name)
 			if nameserver != "" {
 				r.Answer = append(r.Answer, &dns.NS{Hdr: hdr, Ns: nameserver})
 			}
 		case dns.TypeCAA:
-			dflag, tag, content := db.GetCAARecord(database, q.Name)
+			dflag, tag, content := db.Get.CAA(q.Name)
 			if tag != "" && content != "" {
 				r.Answer = append(r.Answer, &dns.CAA{Hdr: hdr, Flag: dflag, Tag: tag, Value: content})
 			}
 		case dns.TypePTR:
-			ptr := db.GetPTRRecord(database, q.Name)
+			ptr := db.Get.PTR(q.Name)
 			if ptr != "" {
 				r.Answer = append(r.Answer, &dns.PTR{Hdr: hdr, Ptr: ptr})
 			}
 		case dns.TypeCERT:
-			tpe, tag, algo, cert := db.GetCERTRecord(database, q.Name)
+			tpe, tag, algo, cert := db.Get.CERT(q.Name)
 			if cert != "" {
 				r.Answer = append(r.Answer, &dns.CERT{Hdr: hdr, Type: tpe, KeyTag: tag, Algorithm: algo, Certificate: cert})
 			}
 		case dns.TypeDNSKEY:
-			flags, proto, algo, pub := db.GetDNSKEYRecord(database, q.Name)
+			flags, proto, algo, pub := db.Get.DNSKEY(q.Name)
 			if pub != "" {
 				r.Answer = append(r.Answer, &dns.DNSKEY{Hdr: hdr, Flags: flags, Protocol: proto, Algorithm: algo, PublicKey: pub})
 			}
 		case dns.TypeDS:
-			ktag, algo, dtype, digest := db.GetDSRecord(database, q.Name)
+			ktag, algo, dtype, digest := db.Get.DS(q.Name)
 			if digest != "" {
 				r.Answer = append(r.Answer, &dns.DS{Hdr: hdr, KeyTag: ktag, Algorithm: algo, DigestType: dtype, Digest: digest})
 			}
 		case dns.TypeNAPTR:
-			ord, pref, dflag, serv, reg, rep := db.GetNAPTRRecord(database, q.Name)
+			ord, pref, dflag, serv, reg, rep := db.Get.NAPTR(q.Name)
 			if serv != "" && reg != "" && rep != "" {
 				r.Answer = append(r.Answer, &dns.NAPTR{Hdr: hdr, Order: ord, Preference: pref, Flags: dflag, Service: serv, Regexp: reg, Replacement: rep})
 			}
 		case dns.TypeSMIMEA:
-			usage, sel, match, cert := db.GetSMIMEARecord(database, q.Name)
+			usage, sel, match, cert := db.Get.SMIMEA(q.Name)
 			if cert != "" {
 				r.Answer = append(r.Answer, &dns.SMIMEA{Hdr: hdr, Usage: usage, Selector: sel, MatchingType: match, Certificate: cert})
 			}
 		case dns.TypeSSHFP:
-			algo, tpe, fingerprint := db.GetSSHFPRecord(database, q.Name)
+			algo, tpe, fingerprint := db.Get.SSHFP(q.Name)
 			if fingerprint != "" {
 				r.Answer = append(r.Answer, &dns.SSHFP{Hdr: hdr, Algorithm: algo, Type: tpe, FingerPrint: fingerprint})
 			}
 		case dns.TypeTLSA:
-			usg, sel, mat, cert := db.GetTLSARecord(database, q.Name)
+			usg, sel, mat, cert := db.Get.TLSA(q.Name)
 			if cert != "" {
 				r.Answer = append(r.Answer, &dns.TLSA{Hdr: hdr, Usage: usg, Selector: sel, MatchingType: mat, Certificate: cert})
 			}
 		case dns.TypeURI:
-			pri, wei, tar := db.GetURIRecord(database, q.Name)
+			pri, wei, tar := db.Get.URI(q.Name)
 			if tar != "" {
 				r.Answer = append(r.Answer, &dns.URI{Hdr: hdr, Priority: pri, Weight: wei, Target: tar})
 			}
@@ -194,7 +194,7 @@ func main() {
 	defer func() { if err := database.Close(); err != nil { log.Fatalf("Failed to close database: %v", err) }}()
 
 	// Setup database structure
-	if err := db.SetupDB(database); err != nil {
+	if err := db.Setup(database); err != nil {
 		log.Fatalf("Failed setting up database structure: %v", err)
 	}
 

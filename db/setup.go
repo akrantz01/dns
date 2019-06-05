@@ -2,7 +2,7 @@ package db
 
 import bolt "go.etcd.io/bbolt"
 
-func SetupDB(db *bolt.DB) error {
+func Setup(db *bolt.DB) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		if _, err := tx.CreateBucketIfNotExists([]byte("A")); err != nil { return err }
 		if _, err := tx.CreateBucketIfNotExists([]byte("AAAA")); err != nil { return err }
