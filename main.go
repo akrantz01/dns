@@ -152,21 +152,28 @@ func main() {
 	if err := viper.BindEnv("host", "port", "database", "tcp", "udp"); err != nil { log.Fatalf("Failed to setup environment variables: %v", err) }
 
 	// Setup command line
-	flag.String("host", "127.0.0.1", "IP address to run on")
-	flag.Int("port", 53, "Port to listen on")
-	flag.String("database", "./records.db", "Database file to use")
-	flag.Bool("no-tcp", false, "Disable listening on TCP")
-	flag.Bool("no-udp", false, "Disable listening on UDP")
+	flag.String("dns.host", "127.0.0.1", "IP address to run the DNS server on")
+	flag.Int("dns.port", 53, "Port for the DNS server to listen on")
+	flag.String("dns.database", "./records.db", "Database file to use")
+	flag.Bool("dns.disable-tcp", false, "Disable listening on TCP")
+	flag.Bool("dns.disable-udp", false, "Disable listening on UDP")
+	flag.String("http.host", "127.0.0.1", "IP address to run the API on")
+	flag.Int("http.port", 8080, "Port for the API to listen on")
+	flag.Bool("http.disabled", false, "Disable the API entirely")
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
 	if err := viper.BindPFlags(pflag.CommandLine); err != nil { log.Fatalf("Failed to setup command line arguments: %v", err) }
 
 	// Set configuration defaults
-	viper.SetDefault("host", "127.0.0.1")
-	viper.SetDefault("port", 53)
-	viper.SetDefault("database", "./records.db")
-	viper.SetDefault("no-tcp", false)
-	viper.SetDefault("no-udp", false)
+	viper.SetDefault("dns.host", "127.0.0.1")
+	viper.SetDefault("dns.port", 53)
+	viper.SetDefault("dns.database", "./records.db")
+	viper.SetDefault("dns.disable-tcp", false)
+	viper.SetDefault("dns.disable-udp", false)
+
+	viper.SetDefault("http.host", "127.0.0.1")
+	viper.SetDefault("http.port", 8080)
+	viper.SetDefault("http.disabled", false)
 
 	// Parse configuration
 	if err := viper.ReadInConfig(); err != nil {
@@ -180,7 +187,7 @@ func main() {
 
 	// Open database
 	var err error
-	database, err = bolt.Open(viper.GetString("database"), 0666, nil)
+	database, err = bolt.Open(viper.GetString("dns.database"), 0666, nil)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
@@ -192,13 +199,13 @@ func main() {
 	}
 
 	// Check config is valid
-	if viper.GetBool("no-tcp") && viper.GetBool("no-udp") { log.Fatalf("Invalid configuration: tcp and/or udp must be enabled, got both as disabled") }
+	if viper.GetBool("dns.disable-tcp") && viper.GetBool("dns.disable-udp") { log.Fatalf("Invalid configuration: tcp and/or udp must be enabled, got both as disabled") }
 
 	// Handle TCP connections
 	tcpErr := make(chan error)
 	go func() {
-		if viper.GetBool("no-tcp") { return }
-		tcp := &dns.Server{Addr: viper.GetString("host") + ":" + viper.GetString("port"), Net: "tcp"}
+		if viper.GetBool("dns.disable-tcp") { return }
+		tcp := &dns.Server{Addr: viper.GetString("dns.host") + ":" + viper.GetString("dns.port"), Net: "tcp"}
 		tcp.Handler = &handler{}
 
 		if err := tcp.ListenAndServe(); err != nil { tcpErr <- err }
@@ -207,8 +214,8 @@ func main() {
 	// Handle UDP connections
 	udpErr := make(chan error)
 	go func() {
-		if viper.GetBool("no-udp") { return }
-		udp := &dns.Server{Addr: viper.GetString("host") + ":" + viper.GetString("port"), Net: "udp"}
+		if viper.GetBool("dns.disable-udp") { return }
+		udp := &dns.Server{Addr: viper.GetString("dns.host") + ":" + viper.GetString("dns.port"), Net: "udp"}
 		udp.Handler = &handler{}
 
 		if err := udp.ListenAndServe(); err != nil { udpErr <- err }
@@ -217,30 +224,33 @@ func main() {
 	// Handle REST API
 	httpErr := make(chan error)
 	go func() {
+		if viper.GetBool("http.disabled") { return }
+
 		http.Handle("/records", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(routes.AllRecordsHandler(database))))
 		http.Handle("/records/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(routes.SingleRecordHandler("/records/", database))))
-		if err := http.ListenAndServe("127.0.0.1:8080", nil); err != nil { httpErr <- err }
+		if err := http.ListenAndServe(viper.GetString("http.host") + ":" + viper.GetString("http.port"), nil); err != nil { httpErr <- err }
 	}()
 
 	// Assemble log
 	var protocols string
-	if !viper.GetBool("no-udp") && !viper.GetBool("no-tcp") {
+	if !viper.GetBool("dns.disable-udp") && !viper.GetBool("dns.disable-tcp") {
 		protocols = "TCP and UDP"
-	} else if viper.GetBool("no-udp") {
+	} else if viper.GetBool("dns.disable-udp") {
 		protocols = "TCP"
 	} else {
 		protocols = "UDP"
 	}
-	log.Printf("DNS server listening on %s:%s with %s...", viper.GetString("host"), viper.GetString("port"), protocols)
-	log.Printf("HTTP server listening on 127.0.0.1:8080...")
+	log.Printf("DNS server listening on %s:%s with %s...", viper.GetString("dns.host"), viper.GetString("dns.port"), protocols)
+
+	if !viper.GetBool("http.disabled") { log.Printf("HTTP server listening on %s:%s...", viper.GetString("http.host"), viper.GetString("http.port")) }
 
 	// Watch for errors
 	select {
 	case err := <- tcpErr:
-		log.Fatalf("DNS failed to listen on 127.0.0.1:1052 with TCP: %v\n", err)
+		log.Fatalf("DNS failed to listen on %s:%s with TCP: %v\n", viper.GetString("dns.host"), viper.GetString("dns.port"), err)
 	case err := <- udpErr:
-		log.Fatalf("DNS failed to listen on 127.0.0.1:1053 with UDP: %v\n", err)
+		log.Fatalf("DNS failed to listen on %s:%s with UDP: %v\n", viper.GetString("dns.host"), viper.GetString("dns.port"), err)
 	case err := <- httpErr:
-		log.Fatalf("API failed to listen on 127.0.0.1:8080: %v\n", err)
+		log.Fatalf("API failed to listen on %s:%s: %v\n", viper.GetString("http.host"), viper.GetString("http.port"), err)
 	}
 }
