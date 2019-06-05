@@ -1,0 +1,26 @@
+# Configure the DNS server
+dns:
+  # What host to listen on
+  host: 127.0.0.1
+
+  # What port to listen on
+  port: 1053
+
+  # Database to use to store records
+  database: ./records.db
+
+  # Disable one of the protocols
+  # At least 1 must be enabled
+  disable-tcp: false
+  disable-udp: false
+
+# Configure the HTTP API server
+http:
+  # What host to listen on
+  host: 127.0.0.1
+
+  # What port to listen on
+  port: 8080
+
+  # Disable the HTTP API
+  disabled: false
