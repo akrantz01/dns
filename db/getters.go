@@ -9,158 +9,142 @@ import (
 	"net"
 )
 
-func (g get) A(qname string) net.IP {
-	var addr net.IP
+func (g get) A(qname string) A {
+	a := A{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("A"))
 
 		if value := records.Get([]byte(qname[:len(qname)-1])); len(value) != 0 {
-			addr = net.ParseIP(string(value))
+			a.Address = net.ParseIP(string(value))
 		}
 
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve A record for '%s': %v", qname, err)
 	}
-	return addr
+	return a
 }
 
-func (g get) AAAA(qname string) net.IP {
-	var addr net.IP
+func (g get) AAAA(qname string) AAAA {
+	a := AAAA{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("AAAA"))
 
 		if value := records.Get([]byte(qname[:len(qname)-1])); len(value) != 0 {
-			addr = net.ParseIP(string(value))
+			a.Address = net.ParseIP(string(value))
 		}
 
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve AAAA record for '%s': %v", qname, err)
 	}
-	return addr
+	return a
 }
 
-func (g get) CNAME(qname string) string {
-	var target string
+func (g get) CNAME(qname string) CNAME {
+	c := CNAME{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("CNAME"))
 
 		if value := records.Get([]byte(qname[:len(qname)-1])); len(value) != 0 {
-			target = string(value)
+			c.Target = string(value)
 		}
 
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve CNAME record for '%s': %v", qname, err)
 	}
-	return target
+	return c
 }
 
-func (g get) MX(qname string) (string, uint16) {
-	var (
-		host     string
-		priority uint16
-	)
+func (g get) MX(qname string) MX {
+	m := MX{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("MX"))
 		shortenedName := qname[:len(qname)-1]
 
 		if hostValue := records.Get([]byte(shortenedName + "*host")); len(hostValue) != 0 {
-			host = string(hostValue)
+			m.Host = string(hostValue)
 		}
 		if priorityValue := records.Get([]byte(shortenedName + "*priority")); len(priorityValue) != 0 {
-			priority = binary.BigEndian.Uint16(priorityValue)
+			m.Priority = binary.BigEndian.Uint16(priorityValue)
 		}
 
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve MX record for '%s': %v", qname, err)
 	}
-	return host, priority
+	return m
 }
 
-func (g get) LOC(qname string) (uint8, uint8, uint8, uint8, uint32, uint32, uint32) {
-	var (
-		version uint8
-		size    uint8
-		horiz   uint8
-		vert    uint8
-		lat     uint32
-		long    uint32
-		alt     uint32
-	)
+func (g get) LOC(qname string) LOC {
+	l := LOC{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("LOC"))
 		shortenedName := qname[:len(qname)-1]
 
 		if versionValue := records.Get([]byte(shortenedName + "*version")); len(versionValue) != 0 {
-			version = versionValue[0]
+			l.Version = versionValue[0]
 		}
 		if sizeValue := records.Get([]byte(shortenedName + "*size")); len(sizeValue) != 0 {
-			size = sizeValue[0]
+			l.Size = sizeValue[0]
 		}
 		if horizValue := records.Get([]byte(shortenedName + "*horiz")); len(horizValue) != 0 {
-			horiz = horizValue[0]
+			l.HorizontalPrecision = horizValue[0]
 		}
 		if vertValue := records.Get([]byte(shortenedName + "*vert")); len(vertValue) != 0 {
-			vert = vertValue[0]
+			l.VerticalPrecision = vertValue[0]
 		}
 		if latValue := records.Get([]byte(shortenedName + "*lat")); len(latValue) != 0 {
-			lat = binary.BigEndian.Uint32(latValue)
+			l.Latitude = binary.BigEndian.Uint32(latValue)
 		}
 		if longValue := records.Get([]byte(shortenedName + "*long")); len(longValue) != 0 {
-			long = binary.BigEndian.Uint32(longValue)
+			l.Longitude = binary.BigEndian.Uint32(longValue)
 		}
 		if altValue := records.Get([]byte(shortenedName + "*alt")); len(altValue) != 0 {
-			alt = binary.BigEndian.Uint32(altValue)
+			l.Altitude = binary.BigEndian.Uint32(altValue)
 		}
 
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve LOC record for '%s': %v", qname, err)
 	}
-	return version, size, horiz, vert, lat, long, alt
+	return l
 }
 
-func (g get) SRV(qname string) (uint16, uint16, uint16, string) {
-	var (
-		priority uint16
-		weight   uint16
-		port     uint16
-		target   string
-	)
+func (g get) SRV(qname string) SRV {
+	s := SRV{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("SRV"))
 		shortenedName := qname[:len(qname)-1]
 
 		if priorityValue := records.Get([]byte(shortenedName + "*priority")); len(priorityValue) != 0 {
-			priority = binary.BigEndian.Uint16(priorityValue)
+			s.Priority = binary.BigEndian.Uint16(priorityValue)
 		}
 		if weightValue := records.Get([]byte(shortenedName + "*weight")); len(weightValue) != 0 {
-			weight = binary.BigEndian.Uint16(weightValue)
+			s.Weight = binary.BigEndian.Uint16(weightValue)
 		}
 		if portValue := records.Get([]byte(shortenedName + "*port")); len(portValue) != 0 {
-			port = binary.BigEndian.Uint16(portValue)
+			s.Port = binary.BigEndian.Uint16(portValue)
 		}
 		if targetValue := records.Get([]byte(shortenedName + "*target")); len(targetValue) != 0 {
-			target = string(targetValue)
+			s.Target = string(targetValue)
 		}
 
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve SRV record for '%s': %v", qname, err)
 	}
-	return priority, weight, port, target
+	return s
 }
 
-func (g get) SPF(qname string) []string {
+func (g get) SPF(qname string) SPF {
 	var txt []string
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
@@ -177,10 +161,10 @@ func (g get) SPF(qname string) []string {
 	}); err != nil {
 		log.Printf("Failed to retrieve SPF record for '%s': %v", qname, err)
 	}
-	return txt
+	return SPF{Text: txt}
 }
 
-func (g get) TXT(qname string) []string {
+func (g get) TXT(qname string) TXT {
 	var content []string
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
@@ -197,319 +181,276 @@ func (g get) TXT(qname string) []string {
 	}); err != nil {
 		log.Printf("Failed to retrieve TXT record for '%s': %v", qname, err)
 	}
-	return content
+	return TXT{Text: content}
 }
 
-func (g get) NS(qname string) string {
-	var nameserver string
+func (g get) NS(qname string) NS {
+	n := NS{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("NS"))
 
 		if value := records.Get([]byte(qname[:len(qname)-1])); len(value) != 0 {
-			nameserver = string(value)
+			n.Nameserver = string(value)
 		}
 
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve NS record for '%s': %v", qname, err)
 	}
-	return nameserver
+	return n
 }
 
-func (g get) CAA(qname string) (uint8, string, string) {
-	var (
-		tag     string
-		content string
-	)
+func (g get) CAA(qname string) CAA {
+	c := CAA{Flag: 0}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("CAA"))
 		shortenedName := qname[:len(qname)-1]
 
 		if tagValue := records.Get([]byte(shortenedName + "*tag")); len(tagValue) != 0 {
-			tag = string(tagValue)
+			c.Tag = string(tagValue)
 		}
 		if contentValue := records.Get([]byte(shortenedName + "*content")); len(contentValue) != 0 {
-			content = string(contentValue)
+			c.Content = string(contentValue)
 		}
 
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve CAA record for '%s': %v", qname, err)
 	}
-	return 0, tag, content
+	return c
 }
 
-func (g get) PTR(qname string) string {
-	var ptr string
+func (g get) PTR(qname string) PTR {
+	p := PTR{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("PTR"))
 
 		if value := records.Get([]byte(qname[:len(qname)-1])); len(value) != 0 {
-			ptr = string(value)
+			p.Domain = string(value)
 		}
 
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve PTR record for '%s': %v", qname, err)
 	}
-	return ptr
+	return p
 }
 
-func (g get) CERT(qname string) (uint16, uint16, uint8, string) {
-	var (
-		tpe    uint16
-		keyTag uint16
-		algo   uint8
-		cert   string
-	)
+func (g get) CERT(qname string) CERT {
+	c := CERT{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("CERT"))
 		shortenedName := qname[:len(qname)-1]
 
 		if typeValue := records.Get([]byte(shortenedName + "*type")); len(typeValue) != 0 {
-			tpe = binary.BigEndian.Uint16(typeValue)
+			c.Type = binary.BigEndian.Uint16(typeValue)
 		}
 		if keyTagValue := records.Get([]byte(shortenedName + "*keytag")); len(keyTagValue) != 0 {
-			keyTag = binary.BigEndian.Uint16(keyTagValue)
+			c.KeyTag = binary.BigEndian.Uint16(keyTagValue)
 		}
 		if algoValue := records.Get([]byte(shortenedName + "*algorithm")); len(algoValue) != 0 {
-			algo = algoValue[0]
+			c.Algorithm = algoValue[0]
 		}
 		if certValue := records.Get([]byte(shortenedName + "*certificate")); len(certValue) != 0 {
-			cert = string(certValue)
+			c.Certificate = string(certValue)
 		}
 
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve CERT record for '%s': %v", qname, err)
 	}
-	return tpe, keyTag, algo, cert
+	return c
 }
 
-func (g get) DNSKEY(qname string) (uint16, uint8, uint8, string) {
-	var (
-		flags uint16
-		proto uint8
-		algo  uint8
-		pub   string
-	)
+func (g get) DNSKEY(qname string) DNSKEY {
+	d := DNSKEY{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("DNSKEY"))
 		shortenedName := qname[:len(qname)-1]
 
 		if flagsValue := records.Get([]byte(shortenedName + "*flags")); len(flagsValue) != 0 {
-			flags = binary.BigEndian.Uint16(flagsValue)
+			d.Flags = binary.BigEndian.Uint16(flagsValue)
 		}
 		if protoValue := records.Get([]byte(shortenedName + "*protocol")); len(protoValue) != 0 {
-			proto = protoValue[0]
+			d.Protocol = protoValue[0]
 		}
 		if algoValue := records.Get([]byte(shortenedName + "*algorithm")); len(algoValue) != 0 {
-			algo = algoValue[0]
+			d.Algorithm = algoValue[0]
 		}
 		if pubValue := records.Get([]byte(shortenedName + "*publickey")); len(pubValue) != 0 {
-			pub = string(pubValue)
+			d.PublicKey = string(pubValue)
 		}
 
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve DNSKEY record for '%s': %v", qname, err)
 	}
-	return flags, proto, algo, pub
+	return d
 }
 
-func (g get) DS(qname string) (uint16, uint8, uint8, string) {
-	var (
-		ktag   uint16
-		algo   uint8
-		dtype  uint8
-		digest string
-	)
+func (g get) DS(qname string) DS {
+	d := DS{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("DS"))
 		shortenedName := qname[:len(qname)-1]
 
 		if ktagValue := records.Get([]byte(shortenedName + "*keytag")); len(ktagValue) != 0 {
-			ktag = binary.BigEndian.Uint16(ktagValue)
+			d.KeyTag = binary.BigEndian.Uint16(ktagValue)
 		}
 		if algoValue := records.Get([]byte(shortenedName + "*algorithm")); len(algoValue) != 0 {
-			algo = algoValue[0]
+			d.Algorithm = algoValue[0]
 		}
 		if dtypeValue := records.Get([]byte(shortenedName + "*digesttype")); len(dtypeValue) != 0 {
-			dtype = dtypeValue[0]
+			d.DigestType = dtypeValue[0]
 		}
 		if digestValue := records.Get([]byte(shortenedName + "*digest")); len(digestValue) != 0 {
-			digest = string(digestValue)
+			d.Digest = string(digestValue)
 		}
 
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve DS record for '%s': %v", qname, err)
 	}
-	return ktag, algo, dtype, digest
+	return d
 }
 
-func (g get) NAPTR(qname string) (uint16, uint16, string, string, string, string) {
-	var (
-		order       uint16
-		pref        uint16
-		flags       string
-		service     string
-		regexp      string
-		replacement string
-	)
+func (g get) NAPTR(qname string) NAPTR {
+	n := NAPTR{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("NAPTR"))
 		shortenedName := qname[:len(qname)-1]
 
 		if orderValue := records.Get([]byte(shortenedName + "*order")); len(orderValue) != 0 {
-			order = binary.BigEndian.Uint16(orderValue)
+			n.Order = binary.BigEndian.Uint16(orderValue)
 		}
 		if prefValue := records.Get([]byte(shortenedName + "*preference")); len(prefValue) != 0 {
-			pref = binary.BigEndian.Uint16(prefValue)
+			n.Preference = binary.BigEndian.Uint16(prefValue)
 		}
 		if flagsValue := records.Get([]byte(shortenedName + "*flags")); len(flagsValue) != 0 {
-			flags = string(flagsValue)
+			n.Flags = string(flagsValue)
 		}
 		if serviceValue := records.Get([]byte(shortenedName + "*service")); len(serviceValue) != 0 {
-			service = string(serviceValue)
+			n.Service = string(serviceValue)
 		}
 		if regexpValue := records.Get([]byte(shortenedName + "*regexp")); len(regexpValue) != 0 {
-			regexp = string(regexpValue)
+			n.Regexp = string(regexpValue)
 		}
 		if replacementValue := records.Get([]byte(shortenedName + "*replacement")); len(replacementValue) != 0 {
-			replacement = string(replacementValue)
+			n.Replacement = string(replacementValue)
 		}
 
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve NAPTR record for '%s': %v", qname, err)
 	}
-	return order, pref, flags, service, regexp, replacement
+	return n
 }
 
-func (g get) SMIMEA(qname string) (uint8, uint8, uint8, string) {
-	var (
-		usage    uint8
-		selector uint8
-		matching uint8
-		cert     string
-	)
+func (g get) SMIMEA(qname string) SMIMEA {
+	s := SMIMEA{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("SMIMEA"))
 		shortenedName := qname[:len(qname)-1]
 
 		if usageValue := records.Get([]byte(shortenedName + "*usage")); len(usageValue) != 0 {
-			usage = usageValue[0]
+			s.Usage = usageValue[0]
 		}
 		if selectorValue := records.Get([]byte(shortenedName + "*selector")); len(selectorValue) != 0 {
-			selector = selectorValue[0]
+			s.Selector = selectorValue[0]
 		}
 		if matchingValue := records.Get([]byte(shortenedName + "*matching")); len(matchingValue) != 0 {
-			matching = matchingValue[0]
+			s.MatchingType = matchingValue[0]
 		}
 		if certValue := records.Get([]byte(shortenedName + "*certificate")); len(certValue) != 0 {
-			cert = string(certValue)
+			s.Certificate = string(certValue)
 		}
 
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve SMIMEA record for '%s': %v", qname, err)
 	}
-	return usage, selector, matching, cert
+	return s
 }
 
-func (g get) SSHFP(qname string) (uint8, uint8, string) {
-	var (
-		algorithm   uint8
-		tpe         uint8
-		fingerprint string
-	)
+func (g get) SSHFP(qname string) SSHFP {
+	s := SSHFP{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("SSHFP"))
 		shortenedName := qname[:len(qname)-1]
 
 		if algorithmValue := records.Get([]byte(shortenedName + "*algorithm")); len(algorithmValue) != 0 {
-			algorithm = algorithmValue[0]
+			s.Algorithm = algorithmValue[0]
 		}
 		if typeValue := records.Get([]byte(shortenedName + "*type")); len(typeValue) != 0 {
-			tpe = typeValue[0]
+			s.Type = typeValue[0]
 		}
 		if fingerprintValue := records.Get([]byte(shortenedName + "*fingerprint")); len(fingerprintValue) != 0 {
-			fingerprint = string(fingerprintValue)
+			s.Fingerprint = string(fingerprintValue)
 		}
 
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve SSHFP record for '%s': %v", qname, err)
 	}
-	return algorithm, tpe, fingerprint
+	return s
 }
 
-func (g get) TLSA(qname string) (uint8, uint8, uint8, string) {
-	var (
-		usage       uint8
-		selector    uint8
-		matching    uint8
-		certificate string
-	)
+func (g get) TLSA(qname string) TLSA {
+	t := TLSA{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("TLSA"))
 		shortenedName := qname[:len(qname)-1]
 
 		if usageValue := records.Get([]byte(shortenedName + "*usage")); len(usageValue) != 0 {
-			usage = usageValue[0]
+			t.Usage = usageValue[0]
 		}
 		if selectorValue := records.Get([]byte(shortenedName + "*selector")); len(selectorValue) != 0 {
-			selector = selectorValue[0]
+			t.Selector = selectorValue[0]
 		}
 		if matchingValue := records.Get([]byte(shortenedName + "*matching")); len(matchingValue) != 0 {
-			matching = matchingValue[0]
+			t.MatchingType = matchingValue[0]
 		}
 		if certificateValue := records.Get([]byte(shortenedName + "*certificate")); len(certificateValue) != 0 {
-			certificate = string(certificateValue)
+			t.Certificate = string(certificateValue)
 		}
 
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve TLSA record for '%s': %v", qname, err)
 	}
-	return usage, selector, matching, certificate
+	return t
 }
 
-func (g get) URI(qname string) (uint16, uint16, string) {
-	var (
-		priority uint16
-		weight   uint16
-		target   string
-	)
+func (g get) URI(qname string) URI {
+	u := URI{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("URI"))
 		shortenedName := qname[:len(qname)-1]
 
 		if priorityValue := records.Get([]byte(shortenedName + "*priority")); len(priorityValue) != 0 {
-			priority = binary.BigEndian.Uint16(priorityValue)
+			u.Priority = binary.BigEndian.Uint16(priorityValue)
 		}
 		if weightValue := records.Get([]byte(shortenedName + "*weight")); len(weightValue) != 0 {
-			weight = binary.BigEndian.Uint16(weightValue)
+			u.Weight = binary.BigEndian.Uint16(weightValue)
 		}
 		if targetValue := records.Get([]byte(shortenedName + "*target")); len(targetValue) != 0 {
-			target = string(targetValue)
+			u.Target = string(targetValue)
 		}
 
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve URI record for '%s': %v", qname, err)
 	}
-	return priority, weight, target
+	return u
 }
