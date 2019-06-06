@@ -29,18 +29,18 @@ func read(w http.ResponseWriter, r *http.Request, path string, database *bolt.DB
 
 	switch r.URL.Query().Get("type") {
 	case "A":
-		ip := db.GetARecord(database, record)
+		ip := db.Get.A(record)
 		response["host"] = ip.String()
 	case "AAAA":
-		response["host"] = db.GetAAAARecord(database, record).String()
+		response["host"] = db.Get.AAAA(record).String()
 	case "CNAME":
-		response["domain"] = db.GetCNAMERecord(database, record)
+		response["domain"] = db.Get.CNAME(record)
 	case "MX":
-		server, priority := db.GetMXRecord(database, record)
+		server, priority := db.Get.MX(record)
 		response["server"] = server
 		response["priority"] = priority
 	case "LOC":
-		version, size, horizontal, vertical, latitude, longitude, altitude := db.GetLOCRecord(database, record)
+		version, size, horizontal, vertical, latitude, longitude, altitude := db.Get.LOC(record)
 		response["version"] = version
 		response["size"] = size
 		response["horizontal-precision"] = horizontal
@@ -49,44 +49,44 @@ func read(w http.ResponseWriter, r *http.Request, path string, database *bolt.DB
 		response["longitude"] = longitude
 		response["altitude"] = altitude
 	case "SRV":
-		priority, weight, port, target := db.GetSRVRecord(database, record)
+		priority, weight, port, target := db.Get.SRV(record)
 		response["priority"] = priority
 		response["weight"] = weight
 		response["port"] = port
 		response["target"] = target
 	case "SPF":
-		response["policy"] = db.GetSPFRecord(database, record)
+		response["policy"] = db.Get.SPF(record)
 	case "TXT":
-		response["text"] = db.GetTXTRecord(database, record)
+		response["text"] = db.Get.TXT(record)
 	case "NS":
-		response["nameserver"] = db.GetNSRecord(database, record)
+		response["nameserver"] = db.Get.NS(record)
 	case "CAA":
-		flag, tag, value := db.GetCAARecord(database, record)
+		flag, tag, value := db.Get.CAA(record)
 		response["flag"] = flag
 		response["tag"] = tag
 		response["value"] = value
 	case "PTR":
-		response["domain"] = db.GetPTRRecord(database, record)
+		response["domain"] = db.Get.PTR(record)
 	case "CERT":
-		tpe, keyTag, algorithm, certificate := db.GetCERTRecord(database, record)
+		tpe, keyTag, algorithm, certificate := db.Get.CERT(record)
 		response["type"] = tpe
 		response["key-tag"] = keyTag
 		response["algorithm"] = algorithm
 		response["certificate"] = certificate
 	case "DNSKEY":
-		flags, protocol, algorithm, publicKey := db.GetDNSKEYRecord(database, record)
+		flags, protocol, algorithm, publicKey := db.Get.DNSKEY(record)
 		response["flags"] = flags
 		response["protocol"] = protocol
 		response["algorithm"] = algorithm
 		response["public-key"] = publicKey
 	case "DS":
-		keyTag, algorithm, digestType, digest := db.GetDSRecord(database, record)
+		keyTag, algorithm, digestType, digest := db.Get.DS(record)
 		response["key-tag"] = keyTag
 		response["algorithm"] = algorithm
 		response["digest-type"] = digestType
 		response["digest"] = digest
 	case "NAPTR":
-		order, preference, flags, service, regexp, replacement := db.GetNAPTRRecord(database, record)
+		order, preference, flags, service, regexp, replacement := db.Get.NAPTR(record)
 		response["order"] = order
 		response["preference"] = preference
 		response["flags"] = flags
@@ -94,24 +94,24 @@ func read(w http.ResponseWriter, r *http.Request, path string, database *bolt.DB
 		response["regexp"] = regexp
 		response["replacement"] = replacement
 	case "SMIMEA":
-		usage, selector, matchingType, certificate := db.GetSMIMEARecord(database, record)
+		usage, selector, matchingType, certificate := db.Get.SMIMEA(record)
 		response["usage"] = usage
 		response["selector"] = selector
 		response["matching-type"] = matchingType
 		response["certificate"] = certificate
 	case "SSHFP":
-		algorithm, tpe, fingerprint := db.GetSSHFPRecord(database, record)
+		algorithm, tpe, fingerprint := db.Get.SSHFP(record)
 		response["algorithm"] = algorithm
 		response["type"] = tpe
 		response["fingerprint"] = fingerprint
 	case "TLSA":
-		usage, selector, matchingType, certificate := db.GetTLSARecord(database, record)
+		usage, selector, matchingType, certificate := db.Get.TLSA(record)
 		response["usage"] = usage
 		response["selector"] = selector
 		response["matching-type"] = matchingType
 		response["certificate"] = certificate
 	case "URI":
-		priority, weight, content := db.GetURIRecord(database, record)
+		priority, weight, content := db.Get.URI(record)
 		response["priority"] = priority
 		response["weight"] = weight
 		response["content"] = content
