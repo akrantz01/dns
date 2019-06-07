@@ -9,8 +9,8 @@ import (
 	"net"
 )
 
-func (g get) A(qname string) A {
-	a := A{}
+func (g get) A(qname string) *A {
+	a := &A{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("A"))
@@ -22,12 +22,15 @@ func (g get) A(qname string) A {
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve A record for '%s': %v", qname, err)
+        return nil
+	} else if len(a.Address) == 0 {
+		return nil
 	}
 	return a
 }
 
-func (g get) AAAA(qname string) AAAA {
-	a := AAAA{}
+func (g get) AAAA(qname string) *AAAA {
+	a := &AAAA{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("AAAA"))
@@ -39,12 +42,13 @@ func (g get) AAAA(qname string) AAAA {
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve AAAA record for '%s': %v", qname, err)
+        return nil
 	}
 	return a
 }
 
-func (g get) CNAME(qname string) CNAME {
-	c := CNAME{}
+func (g get) CNAME(qname string) *CNAME {
+	c := &CNAME{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("CNAME"))
@@ -56,12 +60,13 @@ func (g get) CNAME(qname string) CNAME {
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve CNAME record for '%s': %v", qname, err)
+        return nil
 	}
 	return c
 }
 
-func (g get) MX(qname string) MX {
-	m := MX{}
+func (g get) MX(qname string) *MX {
+	m := &MX{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("MX"))
@@ -77,12 +82,13 @@ func (g get) MX(qname string) MX {
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve MX record for '%s': %v", qname, err)
+        return nil
 	}
 	return m
 }
 
-func (g get) LOC(qname string) LOC {
-	l := LOC{}
+func (g get) LOC(qname string) *LOC {
+	l := &LOC{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("LOC"))
@@ -113,12 +119,13 @@ func (g get) LOC(qname string) LOC {
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve LOC record for '%s': %v", qname, err)
+        return nil
 	}
 	return l
 }
 
-func (g get) SRV(qname string) SRV {
-	s := SRV{}
+func (g get) SRV(qname string) *SRV {
+	s := &SRV{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("SRV"))
@@ -140,11 +147,12 @@ func (g get) SRV(qname string) SRV {
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve SRV record for '%s': %v", qname, err)
+        return nil
 	}
 	return s
 }
 
-func (g get) SPF(qname string) SPF {
+func (g get) SPF(qname string) *SPF {
 	var txt []string
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
@@ -160,11 +168,12 @@ func (g get) SPF(qname string) SPF {
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve SPF record for '%s': %v", qname, err)
+        return nil
 	}
-	return SPF{Text: txt}
+	return &SPF{Text: txt}
 }
 
-func (g get) TXT(qname string) TXT {
+func (g get) TXT(qname string) *TXT {
 	var content []string
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
@@ -180,12 +189,13 @@ func (g get) TXT(qname string) TXT {
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve TXT record for '%s': %v", qname, err)
+        return nil
 	}
-	return TXT{Text: content}
+	return &TXT{Text: content}
 }
 
-func (g get) NS(qname string) NS {
-	n := NS{}
+func (g get) NS(qname string) *NS {
+	n := &NS{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("NS"))
@@ -197,12 +207,13 @@ func (g get) NS(qname string) NS {
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve NS record for '%s': %v", qname, err)
+        return nil
 	}
 	return n
 }
 
-func (g get) CAA(qname string) CAA {
-	c := CAA{Flag: 0}
+func (g get) CAA(qname string) *CAA {
+	c := &CAA{Flag: 0}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("CAA"))
@@ -218,12 +229,13 @@ func (g get) CAA(qname string) CAA {
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve CAA record for '%s': %v", qname, err)
+        return nil
 	}
 	return c
 }
 
-func (g get) PTR(qname string) PTR {
-	p := PTR{}
+func (g get) PTR(qname string) *PTR {
+	p := &PTR{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("PTR"))
@@ -235,12 +247,13 @@ func (g get) PTR(qname string) PTR {
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve PTR record for '%s': %v", qname, err)
+        return nil
 	}
 	return p
 }
 
-func (g get) CERT(qname string) CERT {
-	c := CERT{}
+func (g get) CERT(qname string) *CERT {
+	c := &CERT{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("CERT"))
@@ -262,12 +275,13 @@ func (g get) CERT(qname string) CERT {
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve CERT record for '%s': %v", qname, err)
+        return nil
 	}
 	return c
 }
 
-func (g get) DNSKEY(qname string) DNSKEY {
-	d := DNSKEY{}
+func (g get) DNSKEY(qname string) *DNSKEY {
+	d := &DNSKEY{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("DNSKEY"))
@@ -289,12 +303,13 @@ func (g get) DNSKEY(qname string) DNSKEY {
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve DNSKEY record for '%s': %v", qname, err)
+        return nil
 	}
 	return d
 }
 
-func (g get) DS(qname string) DS {
-	d := DS{}
+func (g get) DS(qname string) *DS {
+	d := &DS{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("DS"))
@@ -316,12 +331,13 @@ func (g get) DS(qname string) DS {
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve DS record for '%s': %v", qname, err)
+        return nil
 	}
 	return d
 }
 
-func (g get) NAPTR(qname string) NAPTR {
-	n := NAPTR{}
+func (g get) NAPTR(qname string) *NAPTR {
+	n := &NAPTR{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("NAPTR"))
@@ -349,12 +365,13 @@ func (g get) NAPTR(qname string) NAPTR {
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve NAPTR record for '%s': %v", qname, err)
+        return nil
 	}
 	return n
 }
 
-func (g get) SMIMEA(qname string) SMIMEA {
-	s := SMIMEA{}
+func (g get) SMIMEA(qname string) *SMIMEA {
+	s := &SMIMEA{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("SMIMEA"))
@@ -376,12 +393,13 @@ func (g get) SMIMEA(qname string) SMIMEA {
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve SMIMEA record for '%s': %v", qname, err)
+        return nil
 	}
 	return s
 }
 
-func (g get) SSHFP(qname string) SSHFP {
-	s := SSHFP{}
+func (g get) SSHFP(qname string) *SSHFP {
+	s := &SSHFP{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("SSHFP"))
@@ -400,12 +418,13 @@ func (g get) SSHFP(qname string) SSHFP {
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve SSHFP record for '%s': %v", qname, err)
+        return nil
 	}
 	return s
 }
 
-func (g get) TLSA(qname string) TLSA {
-	t := TLSA{}
+func (g get) TLSA(qname string) *TLSA {
+	t := &TLSA{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("TLSA"))
@@ -427,12 +446,13 @@ func (g get) TLSA(qname string) TLSA {
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve TLSA record for '%s': %v", qname, err)
+        return nil
 	}
 	return t
 }
 
-func (g get) URI(qname string) URI {
-	u := URI{}
+func (g get) URI(qname string) *URI {
+	u := &URI{}
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("URI"))
@@ -451,6 +471,7 @@ func (g get) URI(qname string) URI {
 		return nil
 	}); err != nil {
 		log.Printf("Failed to retrieve URI record for '%s': %v", qname, err)
+        return nil
 	}
 	return u
 }

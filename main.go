@@ -20,124 +20,135 @@ var database *bolt.DB
 
 type handler struct {}
 func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
+	// Set database into getter and setter
+	db.Get.Db = database
+	db.Set.Db = database
+
+	// Time request for logging
 	start := time.Now()
 
+	// Assemble response
 	r := new(dns.Msg)
 	r.SetReply(m)
 	r.Authoritative = true
 
+	// Iterate over all questions
 	for _, q := range r.Question {
 		hdr := dns.RR_Header{Name: q.Name, Rrtype: q.Qtype, Class: q.Qclass}
 
+		// Do different things based on record type
 		switch q.Qtype {
 		case dns.TypeA:
-			ip := db.Get.A(q.Name)
-			if ip != nil {
-				r.Answer = append(r.Answer, &dns.A{Hdr: hdr, A: ip})
+			record := db.Get.A(q.Name)
+			if record != nil {
+				r.Answer = append(r.Answer, &dns.A{Hdr: hdr, A: record.Address})
 			}
 		case dns.TypeAAAA:
-			ip := db.Get.AAAA(q.Name)
-			if ip != nil {
-				r.Answer = append(r.Answer, &dns.AAAA{Hdr: hdr, AAAA: ip})
+			record :=  db.Get.AAAA(q.Name)
+			if record != nil {
+				r.Answer = append(r.Answer, &dns.AAAA{Hdr: hdr, AAAA: record.Address})
 			}
 		case dns.TypeCNAME:
-			target := db.Get.CNAME(q.Name)
-			if target != "" {
-				r.Answer = append(r.Answer, &dns.CNAME{Hdr: hdr, Target: target})
+			record :=  db.Get.CNAME(q.Name)
+			if record != nil {
+				r.Answer = append(r.Answer, &dns.CNAME{Hdr: hdr, Target: record.Target})
 			}
 		case dns.TypeMX:
-			host, priority := db.Get.MX(q.Name)
-			if host != "" {
-				r.Answer = append(r.Answer, &dns.MX{Hdr: hdr, Preference: priority, Mx: host})
+			record :=  db.Get.MX(q.Name)
+			if record != nil {
+				r.Answer = append(r.Answer, &dns.MX{Hdr: hdr, Preference: record.Priority, Mx: record.Host})
 			}
 		case dns.TypeLOC:
-			vers, siz, hor, ver, lat, lon, alt := db.Get.LOC(q.Name)
-			if lat != 0 && lon != 0 {
-				r.Answer = append(r.Answer, &dns.LOC{Hdr: hdr, Version: vers, Size: siz, HorizPre: hor, VertPre: ver, Latitude: lat, Longitude: lon, Altitude: alt})
+			record :=  db.Get.LOC(q.Name)
+			if record != nil {
+				r.Answer = append(r.Answer, &dns.LOC{Hdr: hdr, Version: record.Version, Size: record.Size, HorizPre: record.HorizontalPrecision, VertPre: record.VerticalPrecision, Latitude: record.Latitude, Longitude: record.Longitude, Altitude: record.Altitude})
 			}
 		case dns.TypeSRV:
-			priority, weight, port, target := db.Get.SRV(q.Name)
-			if target != "" {
-				r.Answer = append(r.Answer, &dns.SRV{Hdr: hdr, Priority: priority, Weight: weight, Port: port, Target: target})
+			record :=  db.Get.SRV(q.Name)
+			if record != nil {
+				r.Answer = append(r.Answer, &dns.SRV{Hdr: hdr, Priority: record.Priority, Weight: record.Weight, Port: record.Port, Target: record.Target})
 			}
 		case dns.TypeSPF:
-			txt := db.Get.SPF(q.Name)
-			if len(txt) != 0 {
-				r.Answer = append(r.Answer, &dns.SPF{Hdr: hdr, Txt: txt})
+			record :=  db.Get.SPF(q.Name)
+			if record != nil {
+				r.Answer = append(r.Answer, &dns.SPF{Hdr: hdr, Txt: record.Text})
 			}
 		case dns.TypeTXT:
-			content := db.Get.TXT(q.Name)
-			if len(content) != 0 {
-				r.Answer = append(r.Answer, &dns.TXT{Hdr: hdr, Txt: content})
+			record :=  db.Get.TXT(q.Name)
+			if record != nil {
+				r.Answer = append(r.Answer, &dns.TXT{Hdr: hdr, Txt: record.Text})
 			}
 		case dns.TypeNS:
-			nameserver := db.Get.NS(q.Name)
-			if nameserver != "" {
-				r.Answer = append(r.Answer, &dns.NS{Hdr: hdr, Ns: nameserver})
+			record :=  db.Get.NS(q.Name)
+			if record != nil {
+				r.Answer = append(r.Answer, &dns.NS{Hdr: hdr, Ns: record.Nameserver})
 			}
 		case dns.TypeCAA:
-			dflag, tag, content := db.Get.CAA(q.Name)
-			if tag != "" && content != "" {
-				r.Answer = append(r.Answer, &dns.CAA{Hdr: hdr, Flag: dflag, Tag: tag, Value: content})
+			record :=  db.Get.CAA(q.Name)
+			if record != nil {
+				r.Answer = append(r.Answer, &dns.CAA{Hdr: hdr, Flag: record.Flag, Tag: record.Tag, Value: record.Content})
 			}
 		case dns.TypePTR:
-			ptr := db.Get.PTR(q.Name)
-			if ptr != "" {
-				r.Answer = append(r.Answer, &dns.PTR{Hdr: hdr, Ptr: ptr})
+			record := db.Get.PTR(q.Name)
+			if record != nil {
+				r.Answer = append(r.Answer, &dns.PTR{Hdr: hdr, Ptr: record.Domain})
 			}
 		case dns.TypeCERT:
-			tpe, tag, algo, cert := db.Get.CERT(q.Name)
-			if cert != "" {
-				r.Answer = append(r.Answer, &dns.CERT{Hdr: hdr, Type: tpe, KeyTag: tag, Algorithm: algo, Certificate: cert})
+			record :=  db.Get.CERT(q.Name)
+			if record != nil {
+				r.Answer = append(r.Answer, &dns.CERT{Hdr: hdr, Type: record.Type, KeyTag: record.KeyTag, Algorithm: record.Algorithm, Certificate: record.Certificate})
 			}
 		case dns.TypeDNSKEY:
-			flags, proto, algo, pub := db.Get.DNSKEY(q.Name)
-			if pub != "" {
-				r.Answer = append(r.Answer, &dns.DNSKEY{Hdr: hdr, Flags: flags, Protocol: proto, Algorithm: algo, PublicKey: pub})
+			record :=  db.Get.DNSKEY(q.Name)
+			if record != nil {
+				r.Answer = append(r.Answer, &dns.DNSKEY{Hdr: hdr, Flags: record.Flags, Protocol: record.Protocol, Algorithm: record.Algorithm, PublicKey: record.PublicKey})
 			}
 		case dns.TypeDS:
-			ktag, algo, dtype, digest := db.Get.DS(q.Name)
-			if digest != "" {
-				r.Answer = append(r.Answer, &dns.DS{Hdr: hdr, KeyTag: ktag, Algorithm: algo, DigestType: dtype, Digest: digest})
+			record :=  db.Get.DS(q.Name)
+			if record != nil {
+				r.Answer = append(r.Answer, &dns.DS{Hdr: hdr, KeyTag: record.KeyTag, Algorithm: record.Algorithm, DigestType: record.DigestType, Digest: record.Digest})
 			}
 		case dns.TypeNAPTR:
-			ord, pref, dflag, serv, reg, rep := db.Get.NAPTR(q.Name)
-			if serv != "" && reg != "" && rep != "" {
-				r.Answer = append(r.Answer, &dns.NAPTR{Hdr: hdr, Order: ord, Preference: pref, Flags: dflag, Service: serv, Regexp: reg, Replacement: rep})
+			record :=  db.Get.NAPTR(q.Name)
+			if record != nil {
+				r.Answer = append(r.Answer, &dns.NAPTR{Hdr: hdr, Order: record.Order, Preference: record.Preference, Flags: record.Flags, Service: record.Service, Regexp: record.Regexp, Replacement: record.Replacement})
 			}
 		case dns.TypeSMIMEA:
-			usage, sel, match, cert := db.Get.SMIMEA(q.Name)
-			if cert != "" {
-				r.Answer = append(r.Answer, &dns.SMIMEA{Hdr: hdr, Usage: usage, Selector: sel, MatchingType: match, Certificate: cert})
+			record :=  db.Get.SMIMEA(q.Name)
+			if record != nil {
+				r.Answer = append(r.Answer, &dns.SMIMEA{Hdr: hdr, Usage: record.Usage, Selector: record.Selector, MatchingType: record.MatchingType, Certificate: record.Certificate})
 			}
 		case dns.TypeSSHFP:
-			algo, tpe, fingerprint := db.Get.SSHFP(q.Name)
-			if fingerprint != "" {
-				r.Answer = append(r.Answer, &dns.SSHFP{Hdr: hdr, Algorithm: algo, Type: tpe, FingerPrint: fingerprint})
+			record :=  db.Get.SSHFP(q.Name)
+			if record != nil {
+				r.Answer = append(r.Answer, &dns.SSHFP{Hdr: hdr, Algorithm: record.Algorithm, Type: record.Type, FingerPrint: record.Fingerprint})
 			}
 		case dns.TypeTLSA:
-			usg, sel, mat, cert := db.Get.TLSA(q.Name)
-			if cert != "" {
-				r.Answer = append(r.Answer, &dns.TLSA{Hdr: hdr, Usage: usg, Selector: sel, MatchingType: mat, Certificate: cert})
+			record :=  db.Get.TLSA(q.Name)
+			if record != nil {
+				r.Answer = append(r.Answer, &dns.TLSA{Hdr: hdr, Usage: record.Usage, Selector: record.Selector, MatchingType: record.MatchingType, Certificate: record.Certificate})
 			}
 		case dns.TypeURI:
-			pri, wei, tar := db.Get.URI(q.Name)
-			if tar != "" {
-				r.Answer = append(r.Answer, &dns.URI{Hdr: hdr, Priority: pri, Weight: wei, Target: tar})
+			record :=  db.Get.URI(q.Name)
+			if record != nil {
+				r.Answer = append(r.Answer, &dns.URI{Hdr: hdr, Priority: record.Priority, Weight: record.Weight, Target: record.Target})
 			}
 		default:
 			r.Rcode = dns.RcodeNameError
 		}
 	}
 
+	// Throw error if no answers
 	if len(r.Answer) == 0 {
 		r.Rcode = dns.RcodeNameError
 	}
 
+	// Write response
 	if err := w.WriteMsg(r); err != nil {
 		log.Printf("Unable to send response: %v", err)
 	}
 
+	// Log to console
 	util.LogResponse(w, r, start)
 }
 

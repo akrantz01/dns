@@ -150,7 +150,7 @@ func (s set) TXT(name string, text []string) error {
 		}
 
 		// Write to bucket
-		return tx.Bucket([]byte("SPF")).Put([]byte(name), encoded.Bytes())
+		return tx.Bucket([]byte("TXT")).Put([]byte(name), encoded.Bytes())
 	})
 }
 
