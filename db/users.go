@@ -7,11 +7,11 @@ import (
 )
 
 type User struct {
-	Name     string           `json:"name"`
-	Username string           `json:"username"`
-	Password string           `json:"password"`
-	Role     string           `json:"role"`
-	Tokens   map[int64]string `json:"tokens"`
+	Name     string `json:"name"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Role     string `json:"role"`
+	Tokens   int64  `json:"tokens"`
 }
 
 func NewUser(name, username, password, role string) User {
@@ -20,7 +20,7 @@ func NewUser(name, username, password, role string) User {
 		Username: username,
 		Password: password,
 		Role: role,
-		Tokens: map[int64]string{},
+		Tokens: 0,
 	}
 }
 
