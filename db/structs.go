@@ -8,7 +8,7 @@ var (
 	// Setter object for "static" methods
 	Set = set{Db: nil}
 	// Delete object for "static" methods
-	Delete = delete{Db: nil}
+	Delete = deleteRecord{Db: nil}
 )
 
 // Getters for different record types
@@ -22,6 +22,6 @@ type set struct {
 }
 
 // Delete different record types
-type delete struct {
+type deleteRecord struct {
 	Db *bolt.DB
 }
