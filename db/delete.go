@@ -4,25 +4,25 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-func (d delete) A(qname string) error {
+func (d deleteRecord) A(qname string) error {
 	return  d.Db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket([]byte("A")).Delete([]byte(qname))
 	})
 }
 
-func (d delete) AAAA(qname string) error {
+func (d deleteRecord) AAAA(qname string) error {
 	return d.Db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket([]byte("AAAA")).Delete([]byte(qname))
 	})
 }
 
-func (d delete) CNAME(qname string) error {
+func (d deleteRecord) CNAME(qname string) error {
 	return d.Db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket([]byte("CNAME")).Delete([]byte(qname))
 	})
 }
 
-func (d delete) MX(qname string) error {
+func (d deleteRecord) MX(qname string) error {
 	return d.Db.Update(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("MX"))
 
@@ -33,7 +33,7 @@ func (d delete) MX(qname string) error {
 	})
 }
 
-func (d delete) LOC(qname string) error {
+func (d deleteRecord) LOC(qname string) error {
 	return d.Db.Update(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("LOC"))
 
@@ -59,7 +59,7 @@ func (d delete) LOC(qname string) error {
 	})
 }
 
-func (d delete) SRV(qname string) error {
+func (d deleteRecord) SRV(qname string) error {
 	return d.Db.Update(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("SRV"))
 
@@ -76,25 +76,25 @@ func (d delete) SRV(qname string) error {
 	})
 }
 
-func (d delete) SPF(qname string) error {
+func (d deleteRecord) SPF(qname string) error {
 	return d.Db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket([]byte("SPF")).Delete([]byte(qname))
 	})
 }
 
-func (d delete) TXT(qname string) error {
+func (d deleteRecord) TXT(qname string) error {
 	return d.Db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket([]byte("TXT")).Delete([]byte(qname))
 	})
 }
 
-func (d delete) NS(qname string) error {
+func (d deleteRecord) NS(qname string) error {
 	return d.Db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket([]byte("NS")).Delete([]byte(qname))
 	})
 }
 
-func (d delete) CAA(qname string) error {
+func (d deleteRecord) CAA(qname string) error {
 	return d.Db.Update(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("CAA"))
 
@@ -105,13 +105,13 @@ func (d delete) CAA(qname string) error {
 	})
 }
 
-func (d delete) PTR(qname string) error {
+func (d deleteRecord) PTR(qname string) error {
 	return d.Db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket([]byte("PTR")).Delete([]byte(qname))
 	})
 }
 
-func (d delete) CERT(qname string) error {
+func (d deleteRecord) CERT(qname string) error {
 	return d.Db.Update(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("CERT"))
 
@@ -128,7 +128,7 @@ func (d delete) CERT(qname string) error {
 	})
 }
 
-func (d delete) DNSKEY(qname string) error {
+func (d deleteRecord) DNSKEY(qname string) error {
 	return d.Db.Update(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("DNSKEY"))
 
@@ -145,7 +145,7 @@ func (d delete) DNSKEY(qname string) error {
 	})
 }
 
-func (d delete) DS(qname string) error {
+func (d deleteRecord) DS(qname string) error {
 	return d.Db.Update(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("DS"))
 
@@ -162,7 +162,7 @@ func (d delete) DS(qname string) error {
 	})
 }
 
-func (d delete) NAPTR(qname string) error {
+func (d deleteRecord) NAPTR(qname string) error {
 	return d.Db.Update(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("NAPTR"))
 
@@ -185,7 +185,7 @@ func (d delete) NAPTR(qname string) error {
 	})
 }
 
-func (d delete) SMIMEA(qname string) error {
+func (d deleteRecord) SMIMEA(qname string) error {
 	return d.Db.Update(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("SMIMEA"))
 
@@ -202,7 +202,7 @@ func (d delete) SMIMEA(qname string) error {
 	})
 }
 
-func (d delete) SSHFP(qname string) error {
+func (d deleteRecord) SSHFP(qname string) error {
 	return d.Db.Update(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("SSHFP"))
 
@@ -216,7 +216,7 @@ func (d delete) SSHFP(qname string) error {
 	})
 }
 
-func (d delete) TLSA(qname string) error {
+func (d deleteRecord) TLSA(qname string) error {
 	return d.Db.Update(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("TLSA"))
 
@@ -233,7 +233,7 @@ func (d delete) TLSA(qname string) error {
 	})
 }
 
-func (d delete) URI(qname string) error {
+func (d deleteRecord) URI(qname string) error {
 	return d.Db.Update(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("URI"))
 
