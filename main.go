@@ -3,7 +3,8 @@ package main
 import (
 	"flag"
 	"github.com/akrantz01/krantz.dev/dns/db"
-	"github.com/akrantz01/krantz.dev/dns/routes"
+	"github.com/akrantz01/krantz.dev/dns/records"
+	"github.com/akrantz01/krantz.dev/dns/users"
 	"github.com/akrantz01/krantz.dev/dns/util"
 	"github.com/gorilla/handlers"
 	"github.com/miekg/dns"
@@ -237,8 +238,11 @@ func main() {
 	go func() {
 		if viper.GetBool("http.disabled") { return }
 
-		http.Handle("/records", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(routes.AllRecordsHandler(database))))
-		http.Handle("/records/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(routes.SingleRecordHandler("/records/", database))))
+		http.Handle("/records", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(records.AllRecordsHandler(database))))
+		http.Handle("/records/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(records.SingleRecordHandler("/records/", database))))
+		http.Handle("/users", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(users.AllUsersHandler(database))))
+		http.Handle("/users/login", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(http.NotFound)))
+		http.Handle("/users/logout", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(http.NotFound)))
 		if err := http.ListenAndServe(viper.GetString("http.host") + ":" + viper.GetString("http.port"), nil); err != nil { httpErr <- err }
 	}()
 

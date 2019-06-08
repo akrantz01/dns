@@ -4,6 +4,7 @@ import bolt "go.etcd.io/bbolt"
 
 func Setup(db *bolt.DB) error {
 	return db.Update(func(tx *bolt.Tx) error {
+		// Setup records
 		if _, err := tx.CreateBucketIfNotExists([]byte("A")); err != nil { return err }
 		if _, err := tx.CreateBucketIfNotExists([]byte("AAAA")); err != nil { return err }
 		if _, err := tx.CreateBucketIfNotExists([]byte("CNAME")); err != nil { return err }
@@ -23,6 +24,9 @@ func Setup(db *bolt.DB) error {
 		if _, err := tx.CreateBucketIfNotExists([]byte("SSHFP")); err != nil { return err }
 		if _, err := tx.CreateBucketIfNotExists([]byte("TLSA")); err != nil { return err }
 		if _, err := tx.CreateBucketIfNotExists([]byte("URI")); err != nil { return err }
+
+		// Setup authentication
+		if _, err := tx.CreateBucketIfNotExists([]byte("users")); err != nil { return err }
 		return nil
 	})
 }
