@@ -1,6 +1,9 @@
 package util
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/akrantz01/krantz.dev/dns/db"
+)
 
 // Check if a value exists within a map
 func Exists(m map[string]interface{}, key string) bool {
@@ -37,4 +40,10 @@ func RemoveDuplicates(arr []string) []string {
 		result = append(result, key)
 	}
 	return result
+}
+
+// Check if a record does not exist
+func RecordDoesNotExist(r db.Record) bool {
+	// This is a REALLY big hack, but its the best way I could think of
+	return fmt.Sprintf("%v", r) == "<nil>"
 }
