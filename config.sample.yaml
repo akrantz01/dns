@@ -22,5 +22,11 @@ http:
   # What port to listen on
   port: 8080
 
+  # Primary admin user
+  admin:
+    name: DNS Admin
+    username: admin
+    password: admin
+
   # Disable the HTTP API
   disabled: false

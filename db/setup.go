@@ -1,9 +1,13 @@
 package db
 
-import bolt "go.etcd.io/bbolt"
+import (
+	"github.com/spf13/viper"
+	bolt "go.etcd.io/bbolt"
+)
 
 func Setup(db *bolt.DB) error {
-	return db.Update(func(tx *bolt.Tx) error {
+	// Create buckets for data
+	if err := db.Update(func(tx *bolt.Tx) error {
 		// Setup records
 		if _, err := tx.CreateBucketIfNotExists([]byte("A")); err != nil { return err }
 		if _, err := tx.CreateBucketIfNotExists([]byte("AAAA")); err != nil { return err }
@@ -29,5 +33,17 @@ func Setup(db *bolt.DB) error {
 		if _, err := tx.CreateBucketIfNotExists([]byte("users")); err != nil { return err }
 		if _, err := tx.CreateBucketIfNotExists([]byte("tokens")); err != nil { return err }
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
+
+	// Add default user if API is enabled
+	if !viper.GetBool("http.disabled") {
+		u := NewUser(viper.GetString("http.admin.name"), viper.GetString("http.admin.username"), viper.GetString("http.admin.password"), "admin")
+		if err := u.Encode(db); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

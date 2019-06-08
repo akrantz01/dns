@@ -171,6 +171,9 @@ func main() {
 	flag.Bool("dns.disable-udp", false, "Disable listening on UDP")
 	flag.String("http.host", "127.0.0.1", "IP address to run the API on")
 	flag.Int("http.port", 8080, "Port for the API to listen on")
+	flag.String("http.admin.name", "DNS Admin", "Name of the admin user")
+	flag.String("http.admin.username", "admin", "Username of the admin user")
+	flag.String("http.admin.password", "admin", "Password of the admin user")
 	flag.Bool("http.disabled", false, "Disable the API entirely")
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
@@ -185,6 +188,9 @@ func main() {
 
 	viper.SetDefault("http.host", "127.0.0.1")
 	viper.SetDefault("http.port", 8080)
+	viper.SetDefault("http.admin.name", "DNS Admin")
+	viper.SetDefault("http.admin.username", "admin")
+	viper.SetDefault("http.admin.password", "admin")
 	viper.SetDefault("http.disabled", false)
 
 	// Parse configuration
