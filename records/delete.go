@@ -26,11 +26,20 @@ func deleteRecord(w http.ResponseWriter, r *http.Request, path string, database 
 	} else if r.URL.Query().Get("type") == "" {
 		util.Responses.Error(w, http.StatusBadRequest, "query parameter 'type' is required")
 		return
+	} else if r.Header.Get("Authorization") == "" {
+		util.Responses.Error(w, http.StatusUnauthorized, "header 'Authorization' is required")
+		return
+	}
+
+	// Verify JWT in headers
+	_, err := db.TokenFromString(r.Header.Get("Authorization"), database)
+	if err != nil {
+		util.Responses.Error(w, http.StatusUnauthorized, "failed to authenticate: "+err.Error())
+		return
 	}
 
 	// Accounts for extra dot and all lowercase in DNS query
 	record := strings.ToLower(r.URL.Path[len(path):])
-	var err error
 
 	switch r.URL.Query().Get("type") {
 	case "A":
