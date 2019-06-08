@@ -38,7 +38,7 @@ func Login(database *bolt.DB) func(w http.ResponseWriter, r *http.Request) {
 		// Check if user exists
 		u, err := db.UserFromDatabase(body["username"].(string), database)
 		if err != nil {
-			util.Responses.Error(w, http.StatusBadRequest, "failed to retrieve user from database: "+err.Error())
+			util.Responses.Error(w, http.StatusUnauthorized, "invalid username or password")
 			return
 		}
 
