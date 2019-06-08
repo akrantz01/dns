@@ -242,7 +242,7 @@ func main() {
 		http.Handle("/records/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(records.SingleRecordHandler("/records/", database))))
 		http.Handle("/users", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(users.AllUsersHandler(database))))
 		http.Handle("/users/login", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(users.Login(database))))
-		http.Handle("/users/logout", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(http.NotFound)))
+		http.Handle("/users/logout", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(users.Logout(database))))
 		if err := http.ListenAndServe(viper.GetString("http.host") + ":" + viper.GetString("http.port"), nil); err != nil { httpErr <- err }
 	}()
 

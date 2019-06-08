@@ -66,19 +66,45 @@ func NewToken(user User, db *bolt.DB) (string, error) {
 	return signed, nil
 }
 
-func TokenFromDatabase(username string, id int64, db *bolt.DB) (Token, error) {
-	var t Token
-
-	err := db.View(func(tx *bolt.Tx) error {
-		tokens := tx.Bucket([]byte("tokens"))
-
-		data := tokens.Get([]byte(fmt.Sprintf("%s-%v", username, id)))
-		if len(data) == 0 {
-			return fmt.Errorf("token not found in database")
+func TokenFromString(tokenStr string, db *bolt.DB) (*jwt.Token, error) {
+	// Retrieve token
+	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (i interface{}, e error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		} else if _, ok := token.Header["kid"]; !ok {
+			return nil, fmt.Errorf("unable to find key id in token")
+		} else if _, ok := token.Header["kid"].(string); !ok {
+			return nil, fmt.Errorf("token id must be a string")
 		}
 
-		return json.Unmarshal(data, &t)
-	})
+		// Get signing key from database
+		var t Token
+		if err := db.View(func(tx *bolt.Tx) error {
+			data := tx.Bucket([]byte("tokens")).Get([]byte(token.Header["kid"].(string)))
+			if len(data) == 0 {
+				return fmt.Errorf("token not found in database")
+			}
+			return json.Unmarshal(data, &t)
+		}); err != nil {
+			return nil, err
+		}
 
-	return t, err
+		// Decode signing key
+		signingKey, err := base64.StdEncoding.DecodeString(t.SigningKey)
+		if err != nil {
+			return nil, fmt.Errorf("unable to decode signing key: %v", err)
+		}
+
+		return signingKey, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the token is valid
+	if !token.Valid {
+		return nil, fmt.Errorf("token is invalid")
+	}
+
+	return token, nil
 }
