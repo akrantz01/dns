@@ -1,4 +1,4 @@
-package routes
+package records
 
 import (
 	"github.com/akrantz01/krantz.dev/dns/util"
