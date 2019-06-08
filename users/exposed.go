@@ -16,6 +16,9 @@ func AllUsersHandler(db *bolt.DB) func(w http.ResponseWriter, r *http.Request) {
 		case "POST":
 			create(w, r, db)
 			return
+		case "PUT":
+			update(w, r, db)
+			return
 		default:
 			util.Responses.Error(w, http.StatusMethodNotAllowed, "method not allowed")
 			return
