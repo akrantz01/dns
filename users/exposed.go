@@ -10,6 +10,9 @@ import (
 func AllUsersHandler(db *bolt.DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
+		case "GET":
+			read(w, r, db)
+			return
 		case "POST":
 			create(w, r, db)
 			return
