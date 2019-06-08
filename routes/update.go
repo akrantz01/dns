@@ -35,11 +35,8 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		util.Responses.Error(w, http.StatusBadRequest, "failed to decode body: "+err.Error())
 		return
-	} else if !util.Exists(body, "type") {
-		util.Responses.Error(w, http.StatusBadRequest, "field 'type' is required")
-		return
-	} else if !util.Types.String(body["type"]) {
-		util.Responses.Error(w, http.StatusBadRequest, "field 'type' must be a string")
+	} else if err, _ := util.ValidateBody(body, []string{"type"}, map[string]map[string]string{"type": {"type": "string", "required": "true"}}); err != "" {
+		util.Responses.Error(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -55,20 +52,20 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 			return
 		}
 
+		// Get valid values in body
+		err, valid := util.ValidateBody(body, []string{"host"}, map[string]map[string]string{"host": {"type": "ipv4", "required": "false"}})
+		if err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
+			return
+		}
+
 		// Update values if they exist in the body
-		if util.Exists(body, "host") {
-			if !util.Types.String(body["host"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'host' must be a string")
-				return
-			} else if ip := net.ParseIP(body["host"].(string)); ip.To4().String() == "<nil>" {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'host' must be an IPv4 address")
-				return
-			}
+		if valid["host"] {
 			record.Address = net.ParseIP(body["host"].(string))
 		}
 
 		// Write updated values to the database
-		if err := db.Set.A(recordName, body["host"].(string)); err != nil {
+		if err := db.Set.A(recordName, record.Address.String()); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
 		}
@@ -81,20 +78,20 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 			return
 		}
 
+		// Get valid values in body
+		err, valid := util.ValidateBody(body, []string{"host"}, map[string]map[string]string{"host": {"type": "ipv6", "required": "false"}})
+		if err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
+			return
+		}
+
 		// Update values if they exist in the body
-		if util.Exists(body, "host") {
-			if !util.Types.String(body["host"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'host' must be a string")
-				return
-			} else if ip := net.ParseIP(body["host"].(string)); ip.To4().String() != "<nil>" {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'host' must be an IPv6 address")
-				return
-			}
+		if valid["host"] {
 			record.Address = net.ParseIP(body["host"].(string))
 		}
 
 		// Write updated values to the database
-		if err := db.Set.AAAA(recordName, body["host"].(string)); err != nil {
+		if err := db.Set.AAAA(recordName, record.Address.String()); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
 		}
@@ -107,12 +104,15 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 			return
 		}
 
+		// Get valid values in body
+		err, valid := util.ValidateBody(body, []string{"target"}, map[string]map[string]string{"target": {"type": "string", "required": "false"}})
+		if err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
+			return
+		}
+
 		// Update values if they exist in the body
-		if util.Exists(body, "target") {
-			if !util.Types.String(body["target"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'target' must be a string")
-				return
-			}
+		if valid["target"] {
 			record.Target = body["target"].(string)
 		}
 
@@ -130,19 +130,18 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 			return
 		}
 
+		// Get valid values in body
+		err, valid := util.ValidateBody(body, []string{"host", "priority"}, map[string]map[string]string{"host": {"type": "string", "required": "false"}, "priority": {"type": "uint16", "required": "false"}})
+		if err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
+			return
+		}
+
 		// Update values if they exist in the body
-		if util.Exists(body, "host") {
-			if !util.Types.String(body["host"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'host' must be a string")
-				return
-			}
+		if valid["host"] {
 			record.Host = body["host"].(string)
 		}
-		if util.Exists(body, "priority") {
-			if !util.Types.Uint16(body["priority"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'priority' must be an integer between 0 and 65535")
-				return
-			}
+		if valid["priority"] {
 			record.Priority = uint16(body["priority"].(float64))
 		}
 
@@ -160,54 +159,41 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 			return
 		}
 
+		// Get valid values in body
+		err, valid := util.ValidateBody(body, []string{"version", "size", "horizontal-precision", "vertical-precision", "latitude", "longitude"}, map[string]map[string]string{
+			"version": {"type": "uint8", "required": "false"},
+			"size": {"type": "uint8", "required": "false"},
+			"horizontal-precision": {"type": "uint8", "required": "false"},
+			"vertical-precision": {"type": "uint8", "required": "false"},
+			"latitude": {"type": "uint32", "required": "false"},
+			"longitude": {"type": "uint32", "required": "false"},
+			"altitude": {"type": "uint32", "required": "false"},
+		})
+		if err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
+			return
+		}
+
 		// Update values if they exist in body
-		if util.Exists(body, "version") {
-			if !util.Types.Uint8(body["version"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'version' must be an integer between 0 and 255")
-				return
-			}
+		if valid["version"] {
 			record.Version = uint8(body["version"].(float64))
 		}
-		if util.Exists(body, "size") {
-			if !util.Types.Uint8(body["size"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'size' must be an integer between 0 and 255")
-				return
-			}
+		if valid["size"] {
 			record.Size = uint8(body["size"].(float64))
 		}
-		if util.Exists(body, "horizontal-precision") {
-			if !util.Types.Uint8(body["horizontal-precision"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'horizontal-precision' must be an integer between 0 and 255")
-				return
-			}
+		if valid["horizontal-precision"] {
 			record.HorizontalPrecision = uint8(body["horizontal-precision"].(float64))
 		}
-		if util.Exists(body, "vertical-precision") {
-			if !util.Types.Uint8(body["vertical-precision"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'vertical-precision' must be an integer between 0 and 255")
-				return
-			}
+		if valid["vertical-precision"] {
 			record.VerticalPrecision = uint8(body["vertical-precision"].(float64))
 		}
-		if util.Exists(body, "latitude") {
-			if !util.Types.Uint32(body["latitude"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'latitude' must be an integer between 0 and 4294967295")
-				return
-			}
+		if valid["latitude"] {
 			record.Latitude = uint32(body["latitude"].(float64))
 		}
-		if util.Exists(body, "longitude") {
-			if !util.Types.Uint32(body["longitude"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'longitude' must be an integer between 0 and 4294967295")
-				return
-			}
+		if valid["longitude"] {
 			record.Longitude = uint32(body["longitude"].(float64))
 		}
-		if util.Exists(body, "altitude") {
-			if !util.Types.Uint32(body["altitude"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'altitude' must be an integer between 0 and 4294967295")
-				return
-			}
+		if valid["altitude"] {
 			record.Altitude = uint32(body["altitude"].(float64))
 		}
 
@@ -225,33 +211,29 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 			return
 		}
 
+		// Get valid values in body
+		err, valid := util.ValidateBody(body, []string{"priority", "weight", "port", "target"}, map[string]map[string]string{
+			"priority": {"type": "uint16", "required": "false"},
+			"weight": {"type": "uint16", "required": "false"},
+			"port": {"type": "uint16", "required": "false"},
+			"target": {"type": "string", "required": "false"},
+		})
+		if err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
+			return
+		}
+
 		// Update values if they exist in body
-		if util.Exists(body, "priority") {
-			if !util.Types.Uint16(body["priority"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'priority' must be an integer between 0 and 65535")
-				return
-			}
+		if valid["priority"] {
 			record.Priority = uint16(body["priority"].(float64))
 		}
-		if util.Exists(body, "weight") {
-			if !util.Types.Uint16(body["weight"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'weight' must be an integer between 0 and 65535")
-				return
-			}
+		if valid["weight"] {
 			record.Weight = uint16(body["weight"].(float64))
 		}
-		if util.Exists(body, "port") {
-			if !util.Types.Uint16(body["port"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'port' must be an integer between 0 and 65535")
-				return
-			}
+		if valid["port"] {
 			record.Port = uint16(body["port"].(float64))
 		}
-		if util.Exists(body, "target") {
-			if !util.Types.String(body["target"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'target' must be a string")
-				return
-			}
+		if valid["target"] {
 			record.Target = body["target"].(string)
 		}
 
@@ -269,17 +251,16 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 			return
 		}
 
+		// Get valid values in body
+		err, valid := util.ValidateBody(body, []string{"text"}, map[string]map[string]string{"text": {"type": "stringarray", "required": "false"}})
+		if err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
+			return
+		}
+
 		// Update values if they exist in body
-		if util.Exists(body, "text") {
-			if !util.Types.StringArray(body["text"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'text' must be an array of strings")
-				return
-			}
+		if valid["text"] {
 			text, _ := util.ConvertArrayToString(body["text"].([]interface{}))
-			if len(text) < 1 {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'text' must be a length of 1")
-				return
-			}
 			record.Text = text
 		}
 
@@ -297,17 +278,16 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 			return
 		}
 
+		// Get valid values in body
+		err, valid := util.ValidateBody(body, []string{"text"}, map[string]map[string]string{"text": {"type": "stringarray", "required": "false"}})
+		if err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
+			return
+		}
+
 		// Update values if they exist in body
-		if util.Exists(body, "text") {
-			if !util.Types.StringArray(body["text"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'text' must be an array of strings")
-				return
-			}
+		if valid["text"] {
 			text, _ := util.ConvertArrayToString(body["text"].([]interface{}))
-			if len(text) < 1 {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'text' must be a length of 1")
-				return
-			}
 			record.Text = text
 		}
 
@@ -325,12 +305,15 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 			return
 		}
 
+		// Get valid values in body
+		err, valid := util.ValidateBody(body, []string{"nameserver"}, map[string]map[string]string{"nameserver": {"type": "string", "required": "false"}})
+		if err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
+			return
+		}
+
 		// Update values if they exist in body
-		if util.Exists(body, "nameserver") {
-			if !util.Types.String(body["nameserver"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'nameserver' must be a string")
-				return
-			}
+		if valid["nameserver"] {
 			record.Nameserver = body["nameserver"].(string)
 		}
 
@@ -348,19 +331,17 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 			return
 		}
 
+		// Get valid values in body
+		err, valid := util.ValidateBody(body, []string{"tag", "content"}, map[string]map[string]string{"tag": {"type": "string", "required": "false"}, "content": {"type": "string", "required": "false"}})
+		if err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
+		}
+
 		// Update values if they exist in body
-		if util.Exists(body, "tag") {
-			if !util.Types.String(body["tag"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'tag' must be a string")
-				return
-			}
+		if valid["tag"] {
 			record.Tag = body["tag"].(string)
 		}
-		if util.Exists(body, "content") {
-			if !util.Types.String(body["content"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'content' must be a string")
-				return
-			}
+		if valid["content"] {
 			record.Tag = body["content"].(string)
 		}
 
@@ -378,12 +359,14 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 			return
 		}
 
+		// Get valid values in body
+		err, valid := util.ValidateBody(body, []string{"domain"}, map[string]map[string]string{"domain": {"type": "string", "required": "false"}})
+		if err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
+		}
+
 		// Update values if they exist in body
-		if util.Exists(body, "domain") {
-			if !util.Types.String(body["domain"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'domain' must be a string")
-				return
-			}
+		if valid["domain"] {
 			record.Domain = body["domain"].(string)
 		}
 
@@ -401,33 +384,28 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 			return
 		}
 
+		// Get valid values in body
+		err, valid := util.ValidateBody(body, []string{"c-type", "key-tag", "algorithm", "certificate"}, map[string]map[string]string{
+			"c-type": {"type": "uint16", "requried": "false"},
+			"key-tag": {"type": "uint16", "required": "false"},
+			"algorithm": {"type": "uint8", "required": "false"},
+			"certificate": {"type": "string", "required": "false"},
+		})
+		if err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
+		}
+
 		// Update values if they exist in body
-		if util.Exists(body, "c-type") {
-			if !util.Types.Uint16(body["c-type"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'c-type' must be an integer between 0 and 65535")
-				return
-			}
+		if valid["c-type"] {
 			record.Type = uint16(body["c-type"].(float64))
 		}
-		if util.Exists(body, "key-tag") {
-			if !util.Types.Uint16(body["key-tag"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'key-tag' must be an integer between 0 and 65535")
-				return
-			}
+		if valid["key-tag"] {
 			record.KeyTag = uint16(body["key-tag"].(float64))
 		}
-		if util.Exists(body, "algorithm") {
-			if !util.Types.Uint8(body["algorithm"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'algorithm' must be an integer between 0 and 255")
-				return
-			}
+		if valid["algorithm"] {
 			record.Algorithm = uint8(body["algorithm"].(float64))
 		}
-		if util.Exists(body, "certificate") {
-			if !util.Types.String(body["certificate"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'certificate' must be a string")
-				return
-			}
+		if valid["certificate"] {
 			record.Certificate = body["certificate"].(string)
 		}
 
@@ -445,33 +423,28 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 			return
 		}
 
+		// Get valid values in body
+		err, valid := util.ValidateBody(body, []string{"flags", "protocol", "algorithm", "public-key"}, map[string]map[string]string{
+			"flags": {"type": "uint16", "required": "false"},
+			"protocol": {"type": "uint8", "required": "false"},
+			"algorithm": {"type": "uint8", "required": "false"},
+			"public-key": {"type": "string", "required": "false"},
+		})
+		if err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
+		}
+
 		// Update values if they exist in body
-		if util.Exists(body, "flags") {
-			if !util.Types.Uint16(body["flags"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'flags' must be an integer between 0 and 65535")
-				return
-			}
+		if valid["flags"] {
 			record.Flags = uint16(body["flags"].(float64))
 		}
-		if util.Exists(body, "protocol") {
-			if !util.Types.Uint8(body["protocol"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'protocol' must be an integer between 0 and 65535")
-				return
-			}
+		if valid["protocol"] {
 			record.Protocol = uint8(body["protocol"].(float64))
 		}
-		if util.Exists(body, "algorithm") {
-			if !util.Types.Uint8(body["algorithm"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'algorithm' must be an integer between 0 and 255")
-				return
-			}
+		if valid["algorithm"] {
 			record.Algorithm = uint8(body["algorithm"].(float64))
 		}
-		if util.Exists(body, "public-key") {
-			if !util.Types.String(body["public-key"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'public-key' must be a string")
-				return
-			}
+		if valid["public-key"] {
 			record.PublicKey = body["public-key"].(string)
 		}
 
@@ -489,33 +462,28 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 			return
 		}
 
+		// Get valid values in body
+		err, valid := util.ValidateBody(body, []string{"key-tag", "algorithm", "digest-type", "digest"}, map[string]map[string]string{
+			"key-tag": {"type": "uint16", "required": "false"},
+			"algorithm": {"type": "uint8", "required": "false"},
+			"digest-type": {"type": "uint8", "required": "false"},
+			"digest": {"type": "string", "required": "false"},
+		})
+		if err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
+		}
+
 		// Update values if they exist in body
-		if util.Exists(body, "key-tag") {
-			if !util.Types.Uint16(body["key-tag"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'key-tag' must be an integer between 0 and 65535")
-				return
-			}
+		if valid["key-tag"] {
 			record.KeyTag = uint16(body["key-tag"].(float64))
 		}
-		if util.Exists(body, "algorithm") {
-			if !util.Types.Uint8(body["algorithm"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'algorithm' must be an integer between 0 and 65535")
-				return
-			}
+		if valid["algorithm"] {
 			record.Algorithm = uint8(body["algorithm"].(float64))
 		}
-		if util.Exists(body, "digest-type") {
-			if !util.Types.Uint8(body["digest-type"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'digest-type' must be an integer between 0 and 255")
-				return
-			}
+		if valid["digest-type"] {
 			record.DigestType = uint8(body["digest-type"].(float64))
 		}
-		if util.Exists(body, "digest") {
-			if !util.Types.String(body["digest"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'digest' must be a string")
-				return
-			}
+		if valid["digest"] {
 			record.Digest = body["digest"].(string)
 		}
 
@@ -533,47 +501,36 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 			return
 		}
 
+		// Get valid values in body
+		err, valid := util.ValidateBody(body, []string{"order", "preference", "flags", "service", "regexp", "replacement"}, map[string]map[string]string{
+			"order": {"type": "uint16", "required": "false"},
+			"preference": {"type": "uint16", "required": "false"},
+			"flags": {"type": "string", "required": "false"},
+			"service": {"type": "string", "required": "false"},
+			"regexp": {"type": "string", "required": "false"},
+			"replacement": {"type": "string", "required": "false"},
+		})
+		if err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
+		}
+
 		// Update values if they exist in body
-		if util.Exists(body, "order") {
-			if !util.Types.Uint16(body["order"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'order' must be an integer between 0 and 65535")
-				return
-			}
+		if valid["order"] {
 			record.Order = uint16(body["order"].(float64))
 		}
-		if util.Exists(body, "preference") {
-			if !util.Types.Uint16(body["preference"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'preference' must be an integer between 0 and 65535")
-				return
-			}
+		if valid["preference"] {
 			record.Preference = uint16(body["preference"].(float64))
 		}
-		if util.Exists(body, "flags") {
-			if !util.Types.String(body["flags"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'flags' must be a string")
-				return
-			}
+		if valid["flags"] {
 			record.Flags = body["flags"].(string)
 		}
-		if util.Exists(body, "service") {
-			if !util.Types.String(body["service"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'service' must be a string")
-				return
-			}
+		if valid["service"] {
 			record.Service = body["service"].(string)
 		}
-		if util.Exists(body, "regexp") {
-			if !util.Types.String(body["regexp"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'regexp' must be a string")
-				return
-			}
+		if valid["regexp"] {
 			record.Regexp = body["regexp"].(string)
 		}
-		if util.Exists(body, "replacement") {
-			if !util.Types.String(body["replacement"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'replacement' must be a string")
-				return
-			}
+		if valid["replacement"] {
 			record.Replacement = body["replacement"].(string)
 		}
 
@@ -591,33 +548,28 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 			return
 		}
 
+		// Get valid values in body
+		err, valid := util.ValidateBody(body, []string{"usage", "selector", "matching-type", "certificate"}, map[string]map[string]string{
+			"usage": {"type": "uint8", "required": "false"},
+			"selector": {"type": "uint8", "required": "false"},
+			"matching-type": {"type": "uint8", "required": "false"},
+			"certificate": {"type": "string", "required": "false"},
+		})
+		if err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
+		}
+
 		// Update values if they exist in body
-		if util.Exists(body, "usage") {
-			if !util.Types.Uint8(body["usage"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'usage' must be an integer between 0 and 255")
-				return
-			}
+		if valid["usage"] {
 			record.Usage = uint8(body["usage"].(float64))
 		}
-		if util.Exists(body, "selector") {
-			if !util.Types.Uint8(body["selector"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'selector' must be an integer between 0 and 255")
-				return
-			}
+		if valid["selector"] {
 			record.Selector = uint8(body["selector"].(float64))
 		}
-		if util.Exists(body, "matching-type") {
-			if !util.Types.Uint8(body["matching-type"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'matching-type' must be an integer between 0 and 255")
-				return
-			}
+		if valid["matching-type"] {
 			record.MatchingType = uint8(body["matching-type"].(float64))
 		}
-		if util.Exists(body, "certificate") {
-			if !util.Types.String(body["certificate"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'certificate' must be a string")
-				return
-			}
+		if valid["certificate"] {
 			record.Certificate = body["certificate"].(string)
 		}
 
@@ -635,26 +587,24 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 			return
 		}
 
+		// Get valid values in body
+		err, valid := util.ValidateBody(body, []string{"algorithm", "s-type", "fingerprint"}, map[string]map[string]string{
+			"algorithm": {"type": "uint8", "required": "false"},
+			"s-type": {"type": "uint8", "required": "false"},
+			"fingerprint": {"type": "string", "required": "false"},
+		})
+		if err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
+		}
+
 		// Update values if they exist in body
-		if util.Exists(body, "algorithm") {
-			if !util.Types.Uint8(body["algorithm"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'algorithm' must be an integer between 0 and 255")
-				return
-			}
+		if valid["algorithm"] {
 			record.Algorithm = uint8(body["algorithm"].(float64))
 		}
-		if util.Exists(body, "s-type") {
-			if !util.Types.Uint8(body["s-type"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 's-type' must be an integer between 0 and 255")
-				return
-			}
+		if valid["s-type"] {
 			record.Type = uint8(body["s-type"].(float64))
 		}
-		if util.Exists(body, "fingerprint") {
-			if !util.Types.String(body["fingerprint"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'fingerprint' must be a string")
-				return
-			}
+		if valid["fingerprint"] {
 			record.Fingerprint = body["fingerprint"].(string)
 		}
 
@@ -672,33 +622,28 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 			return
 		}
 
+		// Get valid values in body
+		err, valid := util.ValidateBody(body, []string{"usage", "selector", "matching-type", "certificate"}, map[string]map[string]string{
+			"usage": {"type": "uint8", "required": "false"},
+			"selector": {"type": "uint8", "required": "false"},
+			"matching-type": {"type": "uint8", "required": "false"},
+			"certificate": {"type": "string", "required": "false"},
+		})
+		if err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
+		}
+
 		// Update values if they exist in body
-		if util.Exists(body, "usage") {
-			if !util.Types.Uint8(body["usage"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'usage' must be an integer between 0 and 255")
-				return
-			}
+		if valid["usage"] {
 			record.Usage = uint8(body["usage"].(float64))
 		}
-		if util.Exists(body, "selector") {
-			if !util.Types.Uint8(body["selector"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'selector' must be an integer between 0 and 255")
-				return
-			}
+		if valid["selector"] {
 			record.Selector = uint8(body["selector"].(float64))
 		}
-		if util.Exists(body, "matching-type") {
-			if !util.Types.Uint8(body["matching-type"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'matching-type' must be an integer between 0 and 255")
-				return
-			}
+		if valid["matching-type"] {
 			record.MatchingType = uint8(body["matching-type"].(float64))
 		}
-		if util.Exists(body, "certificate") {
-			if !util.Types.String(body["certificate"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'certificate' must be a string")
-				return
-			}
+		if valid["certificate"] {
 			record.Certificate = body["certificate"].(string)
 		}
 
@@ -716,26 +661,24 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 			return
 		}
 
+		// Get valid values in body
+		err, valid := util.ValidateBody(body, []string{"priority", "weight", "target"}, map[string]map[string]string{
+			"priority": {"type": "uint16", "required": "false"},
+			"weight": {"type": "uint16", "required": "false"},
+			"target": {"type": "string", "requried": "false"},
+		})
+		if err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
+		}
+
 		// Update values if they exist in body
-		if util.Exists(body, "priority") {
-			if !util.Types.Uint16(body["priority"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'priority' must be an integer between 0 and 65535")
-				return
-			}
+		if valid["priority"] {
 			record.Priority = uint16(body["priority"].(float64))
 		}
-		if util.Exists(body, "weight") {
-			if !util.Types.Uint16(body["weight"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'weight' must be an integer between 0 and 65535")
-				return
-			}
+		if valid["weight"] {
 			record.Weight = uint16(body["weight"].(float64))
 		}
-		if util.Exists(body, "target") {
-			if !util.Types.String(body["target"]) {
-				util.Responses.Error(w, http.StatusBadRequest, "field 'target' must be a string")
-				return
-			}
+		if valid["target"] {
 			record.Target = body["target"].(string)
 		}
 

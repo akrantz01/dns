@@ -5,7 +5,6 @@ import (
 	"github.com/akrantz01/krantz.dev/dns/db"
 	"github.com/akrantz01/krantz.dev/dns/util"
 	bolt "go.etcd.io/bbolt"
-	"net"
 	"net/http"
 	"strings"
 )
@@ -33,451 +32,224 @@ func create(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		util.Responses.Error(w, http.StatusBadRequest, "failed to decode body: "+err.Error())
 		return
-	} else if !util.Exists(body, "type") {
-		util.Responses.Error(w, http.StatusBadRequest, "field 'type' is required")
-		return
-	} else if !util.Exists(body, "name") {
-		util.Responses.Error(w, http.StatusBadRequest, "field 'name' is required")
-		return
-	} else if !util.Types.String(body["type"]) {
-		util.Responses.Error(w, http.StatusBadRequest, "field 'type' must be a string")
-		return
-	} else if !util.Types.String(body["name"]) {
-		util.Responses.Error(w, http.StatusBadRequest, "field 'name' must be a string")
+	} else if err, _ := util.ValidateBody(body, []string{"type", "name"}, map[string]map[string]string{
+		"type": {"required": "true", "type": "string"},
+		"name": {"required": "true", "type": "string"},
+	}); err != "" {
+		util.Responses.Error(w, http.StatusBadRequest, err)
 		return
 	}
 
 	// Parse out body by type
 	switch strings.ToUpper(body["type"].(string)) {
 	case "A":
-		if !util.Exists(body, "host") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'host' is required")
-			return
-		} else if !util.Types.String(body["host"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'host' must be a string")
-			return
-		} else if ip := net.ParseIP(body["host"].(string)); ip.To4().String() == "<nil>" {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'host' must be an IPv4 address")
+		if err, _ := util.ValidateBody(body, []string{"host"}, map[string]map[string]string{"host": {"required": "true", "type": "ipv4"}}); err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
 			return
 		} else if err := db.Set.A(body["name"].(string), body["host"].(string)); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
 		}
 	case "AAAA":
-		if !util.Exists(body, "host") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'host' is required")
-			return
-		} else if !util.Types.String(body["host"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'host' must be a string")
-			return
-		} else if ip := net.ParseIP(body["host"].(string)); ip.To4().String() != "<nil>" {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'host' must be an IPv6 address")
+		if err, _ := util.ValidateBody(body, []string{"host"}, map[string]map[string]string{"host": {"required": "true", "type": "ipv6"}}); err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
 			return
 		} else if err := db.Set.AAAA(body["name"].(string), body["host"].(string)); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
 		}
 	case "CNAME":
-		if !util.Exists(body, "target") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'target' is required")
-			return
-		} else if !util.Types.String(body["target"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'target' must be a string")
+		if err, _ := util.ValidateBody(body, []string{"target"}, map[string]map[string]string{"target": {"required": "true", "type": "string"}}); err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
 			return
 		} else if err := db.Set.CNAME(body["name"].(string), body["target"].(string)); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
 		}
 	case "MX":
-		if !util.Exists(body, "host") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'host' is required")
-			return
-		} else if !util.Exists(body, "priority") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'priority' is required")
-			return
-		} else if !util.Types.String(body["host"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'host' must be a string")
-			return
-		} else if !util.Types.Uint16(body["priority"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'priority' must be an integer between 0 and 65535")
+		if err, _ := util.ValidateBody(body, []string{"priority", "host"}, map[string]map[string]string{
+			"priority": {"type": "uint16", "required": "true"},
+			"host": {"type": "string", "required": "true"},
+		}); err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
 			return
 		} else if err := db.Set.MX(body["name"].(string), uint16(body["priority"].(float64)), body["host"].(string)); err != nil {
 			util.Responses.Error(w, http.StatusBadRequest, "failed to write record to database: "+err.Error())
 			return
 		}
 	case "LOC":
-		if !util.Exists(body, "version") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'version' is required")
-			return
-		} else if !util.Exists(body, "size") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'size' is required")
-			return
-		} else if !util.Exists(body, "horizontal-precision") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'horizontal-precision' is required")
-			return
-		} else if !util.Exists(body, "vertical-precision") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'vertical-precision' is required")
-			return
-		} else if !util.Exists(body, "latitude") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'latitude' is required")
-			return
-		} else if !util.Exists(body, "longitude") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'longitude' is required")
-			return
-		} else if !util.Exists(body, "altitude") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'altitude' is required")
-			return
-		} else if !util.Types.Uint8(body["version"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'version' must be an integer between 0 and 255")
-			return
-		} else if !util.Types.Uint8(body["size"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'size' must be an integer between 0 and 255")
-			return
-		} else if !util.Types.Uint8(body["horizontal-precision"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'horizontal-precision' must be an integer between 0 and 255")
-			return
-		} else if !util.Types.Uint8(body["vertical-precision"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'vertical-precision' must be an integer between 0 and 255")
-			return
-		} else if !util.Types.Uint32(body["latitude"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'latitude' must be an integer between 0 and 4294967295")
-			return
-		} else if !util.Types.Uint32(body["longitude"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'longitude' must be an integer between 0 and 4294967295")
-			return
-		} else if !util.Types.Uint32(body["altitude"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'altitude' must be an integer between 0 and 4294967295")
+		if err, _ := util.ValidateBody(body, []string{"version", "size", "horizontal-precision", "vertical-precision", "latitude", "longitude", "altitude"}, map[string]map[string]string{
+			"version": {"type": "uint8", "required": "true"},
+			"size": {"type": "uint8", "required": "true"},
+			"horizontal-precision": {"type": "uint8", "required": "true"},
+			"vertical-precision": {"type": "uint8", "required": "true"},
+			"latitude": {"type": "uint32", "required": "true"},
+			"longitude": {"type": "uint32", "required": "true"},
+			"altitude": {"type": "uint32", "required": "true"},
+		}); err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
 		} else if err := db.Set.LOC(body["name"].(string), uint8(body["version"].(float64)), uint8(body["size"].(float64)), uint8(body["horizontal-precision"].(float64)), uint8(body["vertical-precision"].(float64)), uint32(body["latitude"].(float64)), uint32(body["longitude"].(float64)), uint32(body["altitude"].(float64))); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
 		}
 	case "SRV":
-		if !util.Exists(body, "priority") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'priority' is required")
-			return
-		} else if !util.Exists(body, "weight") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'weight' is required")
-			return
-		} else if !util.Exists(body, "port") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'port' is required")
-			return
-		} else if !util.Exists(body, "target") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'target' is required")
-			return
-		} else if !util.Types.Uint16(body["priority"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'priority' must be an integer between 0 and 65535")
-			return
-		} else if !util.Types.Uint16(body["weight"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'weight' must be an integer between 0 and 65535")
-			return
-		} else if !util.Types.Uint16(body["port"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'port' must be an integer between 0 and 65535")
-			return
-		} else if !util.Types.String(body["target"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'target' must be a string")
-			return
+		if err, _ := util.ValidateBody(body, []string{"priority", "weight", "port", "target"}, map[string]map[string]string{
+			"priority": {"type": "uint16", "required": "true"},
+			"weight": {"type": "uint16", "required": "true"},
+			"port": {"type": "uint16", "required": "true"},
+			"target": {"type": "string", "required": "true"},
+		}); err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
 		} else if err := db.Set.SRV(body["name"].(string), uint16(body["priority"].(float64)), uint16(body["weight"].(float64)), uint16(body["port"].(float64)), body["target"].(string)); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
 		}
 	case "SPF":
-		if !util.Exists(body, "text") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'text' is required")
-			return
-		} else if !util.Types.StringArray(body["text"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'text' must be an array of strings")
+		if err, _ := util.ValidateBody(body, []string{"text"}, map[string]map[string]string{"text": {"type": "stringarray", "required": "true"}}); err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
 			return
 		}
 		text, _ := util.ConvertArrayToString(body["text"].([]interface{}))
-		if len(text) < 1 {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'text' must a length of length 1")
-			return
-		} else if err := db.Set.SPF(body["name"].(string), text); err != nil {
+		if err := db.Set.SPF(body["name"].(string), text); err != nil {
 			util.Responses.Error(w, http.StatusBadRequest, "failed to write record to database: "+err.Error())
 			return
 		}
 	case "TXT":
-		if !util.Exists(body, "text") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'text' is required")
-			return
-		} else if !util.Types.StringArray(body["text"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'text' must be an array of strings")
+		if err, _ := util.ValidateBody(body, []string{"text"}, map[string]map[string]string{"text": {"type": "stringarray", "required": "true"}}); err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
 			return
 		}
 		text, _ := util.ConvertArrayToString(body["text"].([]interface{}))
-		if len(text) < 1 {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'text' must a length of length 1")
-			return
-		} else if err := db.Set.TXT(body["name"].(string), text); err != nil {
+		if err := db.Set.TXT(body["name"].(string), text); err != nil {
 			util.Responses.Error(w, http.StatusBadRequest, "failed to write record to database: "+err.Error())
 			return
 		}
 	case "NS":
-		if !util.Exists(body, "nameserver") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'nameserver' is required")
-			return
-		} else if !util.Types.String(body["nameserver"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'nameserver' must be a string")
+		if err, _ := util.ValidateBody(body, []string{"nameserver"}, map[string]map[string]string{"nameserver": {"type": "string", "required": "true"}}); err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
 			return
 		} else if err := db.Set.NS(body["name"].(string), body["nameserver"].(string)); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
 		}
 	case "CAA":
-		if !util.Exists(body, "tag") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'tag' is required")
-			return
-		} else if !util.Exists(body, "content") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'content' is required")
-			return
-		} else if !util.Types.String(body["tag"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'tag' must be a string")
-			return
-		} else if !util.Types.String(body["content"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'content' must be a string")
+		if err, _ := util.ValidateBody(body, []string{"content", "tag"}, map[string]map[string]string{
+			"tag": {"type": "string", "required": "true"},
+			"content": {"type": "string", "required": "true"},
+		}); err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
 			return
 		} else if err := db.Set.CAA(body["name"].(string), body["tag"].(string), body["content"].(string)); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
 		}
 	case "PTR":
-		if !util.Exists(body, "domain") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'domain' is required")
-			return
-		} else if !util.Types.String(body["domain"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'domain' must be a string")
+		if err, _ := util.ValidateBody(body, []string{"domain"}, map[string]map[string]string{"domain": {"type": "string", "required": "true"}}); err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
 			return
 		} else if err := db.Set.PTR(body["name"].(string), body["domain"].(string)); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
 		}
 	case "CERT":
-		if !util.Exists(body, "c-type") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'c-type' is required")
-			return
-		} else if !util.Exists(body, "key-tag") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'key-tag' is required")
-			return
-		} else if !util.Exists(body, "algorithm") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'algorithm' is required")
-			return
-		} else if !util.Exists(body, "certificate") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'certificate' is required")
-			return
-		} else if !util.Types.Uint16(body["c-type"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'c-type' must be an integer between 0 and 65535")
-			return
-		} else if !util.Types.Uint16(body["key-tag"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'key-tag' must be an integer between 0 and 65535")
-			return
-		} else if !util.Types.Uint8(body["algorithm"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'algorithm' must be an integer between 0 and 255")
-			return
-		} else if !util.Types.String(body["certificate"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'certificate' must be a string")
+		if err, _ := util.ValidateBody(body, []string{"c-type", "key-tag", "algorithm", "certificate"}, map[string]map[string]string{
+			"c-type": {"type": "uint16", "required": "true"},
+			"key-tag": {"type": "uint16", "required": "true"},
+			"algorithm": {"type": "uint8", "required": "true"},
+			"certificate": {"type": "string", "required": "true"},
+		}); err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
 			return
 		} else if err := db.Set.CERT(body["name"].(string), uint16(body["c-type"].(float64)), uint16(body["key-tag"].(float64)), uint8(body["algorithm"].(float64)), body["certificate"].(string)); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
 		}
 	case "DNSKEY":
-		if !util.Exists(body, "flags") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'flags' is required")
-			return
-		} else if !util.Exists(body, "protocol") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'protocol' is required")
-			return
-		} else if !util.Exists(body, "algorithm") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'algorithm' is required")
-			return
-		} else if !util.Exists(body, "public-key") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'public-key' is required")
-			return
-		} else if !util.Types.Uint16(body["flags"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'flags' must be a uint16")
-			return
-		} else if !util.Types.Uint8(body["protocol"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'protocol' must be a uint8")
-			return
-		} else if !util.Types.Uint8(body["algorithm"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'algorithm' must be a uint8")
-			return
-		} else if !util.Types.String(body["public-key"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'public-key' must be a string")
+		if err, _ := util.ValidateBody(body, []string{"flags", "protocol", "algorithm", "public-key"}, map[string]map[string]string{
+			"flags": {"type": "uint16", "required": "true"},
+			"protocol": {"type": "uint8", "required": "true"},
+			"algorithm": {"type": "uint8", "required": "true"},
+			"public-key": {"type": "string", "required": "true"},
+		}); err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
 			return
 		} else if err := db.Set.DNSKEY(body["name"].(string), uint16(body["flags"].(float64)), uint8(body["protocol"].(float64)), uint8(body["algorithm"].(float64)), body["public-key"].(string)); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
 		}
 	case "DS":
-		if !util.Exists(body, "key-tag") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'key-tag' is required")
-			return
-		} else if !util.Exists(body, "algorithm") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'algorithm' is required")
-			return
-		} else if !util.Exists(body, "digest-type") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'digest-type' is required")
-			return
-		} else if !util.Exists(body, "digest") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'digest' is required")
-			return
-		} else if !util.Types.Uint16(body["key-tag"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'key-tag' must be a uint16")
-			return
-		} else if !util.Types.Uint8(body["algorithm"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'algorithm' must be a uint8")
-			return
-		} else if !util.Types.Uint8(body["digest-type"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'digest-type' must be a uint8")
-			return
-		} else if !util.Types.String(body["digest"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'digest' must be a string")
+		if err, _ := util.ValidateBody(body, []string{"key-tag", "algorithm", "digest-type", "digest"}, map[string]map[string]string{
+			"key-tag": {"type": "uint16", "required": "true"},
+			"algorithm": {"type": "uint8", "required": "true"},
+			"digest-type": {"type": "uint8", "required": "true"},
+			"digest": {"type": "string", "required": "true"},
+		}); err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
 			return
 		} else if err := db.Set.DS(body["name"].(string), uint16(body["key-tag"].(float64)), uint8(body["algorithm"].(float64)), uint8(body["digest-type"].(float64)), body["digest"].(string)); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
 		}
 	case "NAPTR":
-		if !util.Exists(body, "order") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'order' is required")
-			return
-		} else if !util.Exists(body, "preference") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'preference' is required")
-			return
-		} else if !util.Exists(body, "flags") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'flags' is required")
-			return
-		} else if !util.Exists(body, "service") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'service' is required")
-			return
-		} else if !util.Exists(body, "regexp") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'regexp' is required")
-			return
-		} else if !util.Exists(body, "replacement") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'replacement' is required")
-			return
-		} else if !util.Types.Uint16(body["order"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'order' must be an integer between 0 and 65535")
-			return
-		} else if !util.Types.Uint16(body["preference"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'preference' must be an integer between 0 and 65535")
-			return
-		} else if !util.Types.String(body["flags"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'flags' must be a string")
-			return
-		} else if !util.Types.String(body["service"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'service' must be a string")
-			return
-		} else if !util.Types.String(body["regexp"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'regexp' must be a string")
-			return
-		} else if !util.Types.String(body["replacement"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'replacement' must be a string")
+		if err, _ := util.ValidateBody(body, []string{"order", "preference", "flags", "service", "regexp", "replacement"}, map[string]map[string]string{
+			"order": {"type": "uint16", "required": "true"},
+			"preference": {"type": "uint16", "required": "true"},
+			"flags": {"type": "string", "required": "true"},
+			"service": {"type": "string", "required": "true"},
+			"regexp": {"type": "string", "required": "true"},
+			"replacement": {"type": "string", "required": "true"},
+		}); err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
 			return
 		} else if err := db.Set.NAPTR(body["name"].(string), uint16(body["order"].(float64)), uint16(body["preference"].(float64)), body["flags"].(string), body["service"].(string), body["regexp"].(string), body["replacement"].(string)); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
 		}
 	case "SMIMEA":
-		if !util.Exists(body, "usage") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'usage' is required")
-			return
-		} else if !util.Exists(body, "selector") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'selector' is required")
-			return
-		} else if !util.Exists(body, "matching-type") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'matching-type' is required")
-			return
-		} else if !util.Exists(body, "certificate") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'certificate' is required")
-			return
-		} else if !util.Types.Uint8(body["usage"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'usage' must be a uint16")
-			return
-		} else if !util.Types.Uint8(body["selector"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'selector' must be a uint8")
-			return
-		} else if !util.Types.Uint8(body["matching-type"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'matching-type' must be a uint8")
-			return
-		} else if !util.Types.String(body["certificate"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'certificate' must be a string")
+		if err, _ := util.ValidateBody(body, []string{"usage", "selector", "matching-type", "certificate"}, map[string]map[string]string{
+			"usage": {"type": "uint8", "required": "true"},
+			"selector": {"type": "uint8", "required": "true"},
+			"matching-type": {"type": "uint8", "required": "true"},
+			"certificate": {"type": "string", "required": "true"},
+		}); err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
 			return
 		} else if err := db.Set.SMIMEA(body["name"].(string), uint8(body["usage"].(float64)), uint8(body["selector"].(float64)), uint8(body["matching-type"].(float64)), body["certificate"].(string)); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
 		}
 	case "SSHFP":
-		if !util.Exists(body, "algorithm") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'algorithm' is required")
-			return
-		} else if !util.Exists(body, "s-type") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 's-type' is required")
-			return
-		} else if !util.Exists(body, "fingerprint") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'fingerprint' is required")
-			return
-		} else if !util.Types.Uint8(body["algorithm"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'algorithm' must be a uint16")
-			return
-		} else if !util.Types.Uint8(body["s-type"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 's-type' must be a uint8")
-			return
-		} else if !util.Types.String(body["fingerprint"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'fingerprint' must be a string")
+		if err, _ := util.ValidateBody(body, []string{"algorithm", "s-type", "fingerprint"}, map[string]map[string]string{
+			"algorithm": {"type": "uint8", "required": "true"},
+			"s-type": {"type": "uint8", "required": "true"},
+			"fingerprint": {"type": "string", "required": "true"},
+		}); err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
 			return
 		} else if err := db.Set.SSHFP(body["name"].(string), uint8(body["algorithm"].(float64)), uint8(body["s-type"].(float64)), body["fingerprint"].(string)); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
 		}
 	case "TLSA":
-		if !util.Exists(body, "usage") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'usage' is required")
-			return
-		} else if !util.Exists(body, "selector") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'selector' is required")
-			return
-		} else if !util.Exists(body, "matching-type") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'matching-type' is required")
-			return
-		} else if !util.Exists(body, "certificate") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'certificate' is required")
-			return
-		} else if !util.Types.Uint8(body["usage"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'usage' must be a uint16")
-			return
-		} else if !util.Types.Uint8(body["selector"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'selector' must be a uint8")
-			return
-		} else if !util.Types.Uint8(body["matching-type"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'matching-type' must be a uint8")
-			return
-		} else if !util.Types.String(body["certificate"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'certificate' must be a string")
+		if err, _ := util.ValidateBody(body, []string{"usage", "selector", "matching-type", "certificate"}, map[string]map[string]string{
+			"usage": {"type": "uint8", "required": "true"},
+			"selector": {"type": "uint8", "required": "true"},
+			"matching-type": {"type": "uint8", "required": "true"},
+			"certificate": {"type": "string", "required": "true"},
+		}); err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
 			return
 		} else if err := db.Set.TLSA(body["name"].(string), uint8(body["usage"].(float64)), uint8(body["selector"].(float64)), uint8(body["matching-type"].(float64)), body["certificate"].(string)); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
 		}
 	case "URI":
-		if !util.Exists(body, "priority") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'priority' is required")
-			return
-		} else if !util.Exists(body, "weight") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'weight' is required")
-			return
-		} else if !util.Exists(body, "target") {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'target' is required")
-			return
-		} else if !util.Types.Uint16(body["priority"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'priority' must be an integer between 0 and 65535")
-			return
-		} else if !util.Types.Uint16(body["weight"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'weight' must be an integer between 0 and 65535")
-			return
-		} else if !util.Types.String(body["target"]) {
-			util.Responses.Error(w, http.StatusBadRequest, "field 'target' must be a string")
+		if err, _ := util.ValidateBody(body, []string{"priority", "weight", "target"}, map[string]map[string]string{
+			"priority": {"type": "uint16", "required": "true"},
+			"weight": {"type": "uint16", "required": "true"},
+			"target": {"type": "string", "required": "true"},
+		}); err != "" {
+			util.Responses.Error(w, http.StatusBadRequest, err)
 			return
 		} else if err := db.Set.URI(body["name"].(string), uint16(body["priority"].(float64)), uint16(body["weight"].(float64)), body["target"].(string)); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
