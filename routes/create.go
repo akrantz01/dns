@@ -11,9 +11,10 @@ import (
 
 // Handle the creation of records
 func create(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
-	// Set database into getter and setter
+	// Set database into operations
 	db.Get.Db = database
 	db.Set.Db = database
+	db.Delete.Db = database
 
 	// Validate initial request with request type, body exists, and content type
 	if r.Method != "POST" {

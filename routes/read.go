@@ -10,9 +10,10 @@ import (
 )
 
 func read(w http.ResponseWriter, r *http.Request, path string, database *bolt.DB) {
-	// Set database into getter and setter
+	// Set database into operations
 	db.Get.Db = database
 	db.Set.Db = database
+	db.Delete.Db = database
 
 	if r.Method != "GET" {
 		util.Responses.Error(w, http.StatusMethodNotAllowed, "method not allowed")
