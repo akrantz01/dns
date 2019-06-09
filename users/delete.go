@@ -33,9 +33,20 @@ func deleteUser(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 		return
 	}
 
+	// Operate differently if admin
+	username := claims["sub"].(string)
+	u, err := db.UserFromDatabase(username, database)
+	if err != nil {
+		util.Responses.Error(w, http.StatusUnauthorized, "failed to retrieve user")
+		return
+	} else if u.Role == "admin" && r.URL.Query().Get("user") != "" {
+		// Allow operating on different user if admin
+		username = r.URL.Query().Get("user")
+	}
+
 	// Delete user
 	if err := database.Update(func(tx *bolt.Tx) error {
-		return tx.Bucket([]byte("users")).Delete([]byte(claims["sub"].(string)))
+		return tx.Bucket([]byte("users")).Delete([]byte(username))
 	}); err != nil {
 		util.Responses.Error(w, http.StatusInternalServerError, "failed to delete user from database: "+err.Error())
 		return
@@ -45,7 +56,7 @@ func deleteUser(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 	if err := database.Update(func(tx *bolt.Tx) error {
 		tokens := tx.Bucket([]byte("tokens"))
 		return tokens.ForEach(func(k, v []byte) error {
-			if strings.Split(string(k), "-")[0] == claims["sub"].(string) {
+			if strings.Split(string(k), "-")[0] == username {
 				if err := tokens.Delete([]byte(k)); err != nil {
 					return err
 				}

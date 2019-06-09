@@ -32,8 +32,19 @@ func read(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 		return
 	}
 
+	// Operate differently if admin
+	username := claims["sub"].(string)
+	u, err := db.UserFromDatabase(username, database)
+	if err != nil {
+		util.Responses.Error(w, http.StatusUnauthorized, "failed to retrieve user")
+		return
+	} else if u.Role == "admin" && r.URL.Query().Get("user") != "" {
+		// Allow operating on different user if admin
+		username = r.URL.Query().Get("user")
+	}
+
 	// Retrieve user from database
-	u, err := db.UserFromDatabase(claims["sub"].(string), database)
+	u, err = db.UserFromDatabase(username, database)
 	if err != nil {
 		util.Responses.Error(w, http.StatusBadRequest, err.Error())
 		return

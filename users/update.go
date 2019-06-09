@@ -39,15 +39,25 @@ func update(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 		return
 	}
 
+	// Operate differently if admin
+	username := claims["sub"].(string)
+	u, err := db.UserFromDatabase(username, database)
+	if err != nil {
+		util.Responses.Error(w, http.StatusUnauthorized, "failed to retrieve user")
+		return
+	} else if u.Role == "admin" && r.URL.Query().Get("user") != "" {
+		// Allow operating on different user if admin
+		username = r.URL.Query().Get("user")
+	}
+
 	// Validate body by decoding json, checking fields exist, and checking field types
 	var body map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		util.Responses.Error(w, http.StatusBadRequest, "failed to decode body: "+err.Error())
 		return
 	}
-	validationErr, valid := util.ValidateBody(body, []string{"name", "username", "password", "role"}, map[string]map[string]string{
+	validationErr, valid := util.ValidateBody(body, []string{"name", "password", "role"}, map[string]map[string]string{
 		"name": {"type": "string", "required": "false"},
-		"username": {"type": "string", "required": "false"},
 		"password": {"type": "string", "required": "false"},
 		"role": {"type": "string", "required": "false"},
 	})
@@ -57,7 +67,7 @@ func update(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 	}
 
 	// Get user from database
-	u, err := db.UserFromDatabase(claims["sub"].(string), database)
+	u, err = db.UserFromDatabase(username, database)
 	if err != nil {
 		util.Responses.Error(w, http.StatusBadRequest, err.Error())
 		return
@@ -66,9 +76,6 @@ func update(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 	// Update values if they exist in body
 	if valid["name"] {
 		u.Name = body["name"].(string)
-	}
-	if valid["username"] {
-		u.Username = body["username"].(string)
 	}
 	if valid["password"] {
 		u.Password = body["password"].(string)
