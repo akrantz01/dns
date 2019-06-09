@@ -24,7 +24,7 @@ func ValidateBody(body map[string]interface{}, keys []string, options map[string
 		case "ipv4":
 			if !Types.String(body[key]) {
 				return "field '" + key + "' must be a string", valid
-			} else if body[key].(string) == "" {
+			} else if body[key].(string) == "" && options[key]["required"] == "true" {
 				return "field '" + key + "' must be of length longer than 0", valid
 			} else if ip := net.ParseIP(body[key].(string)); ip.To4().String() == "<nil>" {
 				return "field '" + key + "' must be an IPv4 address", valid
@@ -33,7 +33,7 @@ func ValidateBody(body map[string]interface{}, keys []string, options map[string
 		case "ipv6":
 			if !Types.String(body[key]) {
 				return "field '" + key + "' must be a string", valid
-			} else if body[key].(string) == "" {
+			} else if body[key].(string) == "" && options[key]["required"] == "true" {
 				return "field '" + key + "' must be of length longer than 0", valid
 			} else if ip := net.ParseIP(body[key].(string)); ip.To4().String() != "<nil>" {
 				return "field '" + key + "' must be an IPv4 address", valid
@@ -42,7 +42,7 @@ func ValidateBody(body map[string]interface{}, keys []string, options map[string
 		case "string":
 			if !Types.String(body[key]) {
 				return "field '" + key + "' must be a string", valid
-			} else if body[key].(string) == "" {
+			} else if body[key].(string) == "" && options[key]["required"] == "true" {
 				return "field '" + key + "' must be of length longer than 0", valid
 			}
 

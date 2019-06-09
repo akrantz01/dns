@@ -30,6 +30,9 @@ func SingleRoleHandler(path string, db *bolt.DB) func(w http.ResponseWriter, r *
 		case "GET":
 			read(w, r, path, db)
 			return
+		case "PUT":
+			update(w, r, path, db)
+			return
 		default:
 			util.Responses.Error(w, http.StatusMethodNotAllowed, "method not allowed")
 			return

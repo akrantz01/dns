@@ -35,3 +35,9 @@ func GetRole(name string, db *bolt.DB) (string, string, error) {
 
 	return allow, deny, nil
 }
+
+func DeleteRole(name, effect string, db *bolt.DB) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		return tx.Bucket([]byte("roles")).Delete([]byte(name+"-"+effect))
+	})
+}
