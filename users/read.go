@@ -43,6 +43,24 @@ func read(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 		username = r.URL.Query().Get("user")
 	}
 
+	// Get list of all users if admin
+	if username == "*" && u.Role == "admin" {
+		var users []string
+
+		if err := database.View(func(tx *bolt.Tx) error {
+			return tx.Bucket([]byte("users")).ForEach(func(k, v []byte) error {
+				users = append(users, string(k))
+				return nil
+			})
+		}); err != nil {
+			util.Responses.Error(w, http.StatusInternalServerError, "failed to retrieve all users: "+err.Error())
+			return
+		}
+
+		util.Responses.SuccessWithData(w, users)
+		return
+	}
+
 	// Retrieve user from database
 	u, err = db.UserFromDatabase(username, database)
 	if err != nil {
