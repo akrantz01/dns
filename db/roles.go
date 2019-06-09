@@ -7,6 +7,10 @@ import (
 )
 
 func CreateRole(name, filter, effect string, db *bolt.DB) error {
+	if name == "admin" {
+		return fmt.Errorf("cannot add permissions to role 'admin'")
+	}
+
 	if _, err := regexp.Compile(filter); err != nil {
 		return fmt.Errorf("invalid regular expression")
 	}
@@ -37,6 +41,10 @@ func GetRole(name string, db *bolt.DB) (string, string, error) {
 }
 
 func DeleteRole(name, effect string, db *bolt.DB) error {
+	if name == "admin" {
+		return fmt.Errorf("cannot delete role 'admin'")
+	}
+
 	return db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket([]byte("roles")).Delete([]byte(name+"-"+effect))
 	})
