@@ -1,9 +1,8 @@
 package db
 
 import (
-	"bytes"
 	"encoding/binary"
-	"encoding/gob"
+	"encoding/json"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -116,41 +115,27 @@ func (s set) SRV(name string, priority, weight, port uint16, target string) erro
 
 func (s set) SPF(name string, text []string) error {
 	return s.Db.Update(func(tx *bolt.Tx) error {
-		// Get proper size of buffer
-		size := 0
-		for _, t := range text {
-			size += len(t)
-		}
-
-		// Encode into gob
-		encoded := bytes.NewBuffer(make([]byte, 0, size))
-		enc := gob.NewEncoder(encoded)
-		if err := enc.Encode(text); err != nil {
+		// Encode to JSON
+		arr, err := json.Marshal(text)
+		if err != nil {
 			return err
 		}
 
 		// Write to bucket
-		return tx.Bucket([]byte("SPF")).Put([]byte(name), encoded.Bytes())
+		return tx.Bucket([]byte("SPF")).Put([]byte(name), arr)
 	})
 }
 
 func (s set) TXT(name string, text []string) error {
 	return s.Db.Update(func(tx *bolt.Tx) error {
-		// Get proper size of buffer
-		size := 0
-		for _, t := range text {
-			size += len(t)
-		}
-
-		// Encode into gob
-		encoded := bytes.NewBuffer(make([]byte, 0, size))
-		enc := gob.NewEncoder(encoded)
-		if err := enc.Encode(text); err != nil {
+		// Encode to JSON
+		arr, err := json.Marshal(text)
+		if err != nil {
 			return err
 		}
 
 		// Write to bucket
-		return tx.Bucket([]byte("TXT")).Put([]byte(name), encoded.Bytes())
+		return tx.Bucket([]byte("TXT")).Put([]byte(name), arr)
 	})
 }
 

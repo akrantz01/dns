@@ -1,9 +1,8 @@
 package db
 
 import (
-	"bytes"
 	"encoding/binary"
-	"encoding/gob"
+	"encoding/json"
 	bolt "go.etcd.io/bbolt"
 	"log"
 	"net"
@@ -153,15 +152,14 @@ func (g get) SRV(qname string) *SRV {
 }
 
 func (g get) SPF(qname string) *SPF {
-	var txt []string
+	var content []string
 
 	if err := g.Db.View(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("SPF"))
 
 		if value := records.Get([]byte(qname[:len(qname)-1])); len(value) != 0 {
-			decoded := bytes.NewBuffer(value)
-			dec := gob.NewDecoder(decoded)
-			if err := dec.Decode(&txt); err != nil {
+			if err := json.Unmarshal(value, &content); err != nil {
+				return err
 			}
 		}
 
@@ -170,7 +168,16 @@ func (g get) SPF(qname string) *SPF {
 		log.Printf("Failed to retrieve SPF record for '%s': %v", qname, err)
         return nil
 	}
-	return &SPF{Text: txt}
+
+	// Prune all empty strings
+	var text []string
+	for _, v := range content {
+		if len(v) != 0 {
+			text = append(text, v)
+		}
+	}
+
+	return &SPF{Text: content}
 }
 
 func (g get) TXT(qname string) *TXT {
@@ -180,9 +187,8 @@ func (g get) TXT(qname string) *TXT {
 		records := tx.Bucket([]byte("TXT"))
 
 		if value := records.Get([]byte(qname[:len(qname)-1])); len(value) != 0 {
-			decoded := bytes.NewBuffer(value)
-			dec := gob.NewDecoder(decoded)
-			if err := dec.Decode(&content); err != nil {
+			if err := json.Unmarshal(value, &content); err != nil {
+				return err
 			}
 		}
 
@@ -191,7 +197,16 @@ func (g get) TXT(qname string) *TXT {
 		log.Printf("Failed to retrieve TXT record for '%s': %v", qname, err)
         return nil
 	}
-	return &TXT{Text: content}
+
+	// Prune all empty strings
+	var text []string
+	for _, v := range content {
+		if len(v) != 0 {
+			text = append(text, v)
+		}
+	}
+
+	return &TXT{Text: text}
 }
 
 func (g get) NS(qname string) *NS {
