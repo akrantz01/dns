@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	bolt "go.etcd.io/bbolt"
+	"gopkg.in/hlandau/passlib.v1"
 	"log"
 	"net/http"
 	"os"
@@ -214,6 +215,11 @@ func main() {
 	// Setup database structure
 	if err := db.Setup(database); err != nil {
 		log.Fatalf("Failed setting up database structure: %v", err)
+	}
+
+	// Setup hashing
+	if err := passlib.UseDefaults(passlib.DefaultsLatest); err != nil {
+		log.Fatal("invalid hash configuration")
 	}
 
 	// Check config is valid

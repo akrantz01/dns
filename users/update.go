@@ -6,6 +6,7 @@ import (
 	"github.com/akrantz01/krantz.dev/dns/util"
 	"github.com/dgrijalva/jwt-go"
 	bolt "go.etcd.io/bbolt"
+	"gopkg.in/hlandau/passlib.v1"
 	"net/http"
 )
 
@@ -78,7 +79,12 @@ func update(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 		u.Name = body["name"].(string)
 	}
 	if valid["password"] {
-		u.Password = body["password"].(string)
+		hash, err := passlib.Hash(body["password"].(string))
+		if err != nil {
+			util.Responses.Error(w, http.StatusInternalServerError, "failed to hash password: "+err.Error())
+			return
+		}
+		u.Password = hash
 	}
 	if valid["role"] {
 		u.Role = body["role"].(string)

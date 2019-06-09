@@ -3,6 +3,8 @@ package db
 import (
 	"github.com/spf13/viper"
 	bolt "go.etcd.io/bbolt"
+	"gopkg.in/hlandau/passlib.v1"
+	"log"
 )
 
 func Setup(db *bolt.DB) error {
@@ -39,7 +41,12 @@ func Setup(db *bolt.DB) error {
 
 	// Add default user if API is enabled
 	if !viper.GetBool("http.disabled") {
-		u := NewUser(viper.GetString("http.admin.name"), viper.GetString("http.admin.username"), viper.GetString("http.admin.password"), "admin")
+		hash, err := passlib.Hash(viper.GetString("http.admin.password"))
+		if err != nil {
+			log.Fatalf("failed to hash admin password: %v", err)
+		}
+
+		u := NewUser(viper.GetString("http.admin.name"), viper.GetString("http.admin.username"), hash, "admin")
 		if err := u.Encode(db); err != nil {
 			return err
 		}

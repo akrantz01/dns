@@ -5,6 +5,7 @@ import (
 	"github.com/akrantz01/krantz.dev/dns/db"
 	"github.com/akrantz01/krantz.dev/dns/util"
 	bolt "go.etcd.io/bbolt"
+	"gopkg.in/hlandau/passlib.v1"
 	"net/http"
 )
 
@@ -40,6 +41,18 @@ func Login(database *bolt.DB) func(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			util.Responses.Error(w, http.StatusUnauthorized, "invalid username or password")
 			return
+		}
+
+		// Verify password
+		if newHash, err := passlib.Verify(body["password"].(string), u.Password); err != nil {
+			util.Responses.Error(w, http.StatusUnauthorized, "invalid username or password")
+			return
+		} else if newHash != "" {
+			u.Password = newHash
+			if err := u.Encode(database); err != nil {
+				util.Responses.Error(w, http.StatusInternalServerError, "failed to rehash password: "+err.Error())
+				return
+			}
 		}
 
 		// Generate token
