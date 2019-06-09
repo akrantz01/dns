@@ -52,6 +52,6 @@ func list(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 		return
 	}
 
-	util.RemoveDuplicates(roles)
+	roles = util.RemoveDuplicates(roles)
 	util.Responses.SuccessWithData(w, roles)
 }
