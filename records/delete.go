@@ -32,14 +32,30 @@ func deleteRecord(w http.ResponseWriter, r *http.Request, path string, database 
 	}
 
 	// Verify JWT in headers
-	_, err := db.TokenFromString(r.Header.Get("Authorization"), database)
+	token, err := db.TokenFromString(r.Header.Get("Authorization"), database)
 	if err != nil {
 		util.Responses.Error(w, http.StatusUnauthorized, "failed to authenticate: "+err.Error())
 		return
 	}
 
+	// Get user from token
+	user, err := db.UserFromToken(token, database)
+	if err != nil {
+		util.Responses.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	// Accounts for extra dot and all lowercase in DNS query
 	record := strings.ToLower(r.URL.Path[len(path):])
+
+	// Check if allowed
+	if allowed, err := db.EvaluateRole(user.Role, record, database); err != nil {
+		util.Responses.Error(w, http.StatusInternalServerError, "failed to evaluate the role: "+err.Error())
+		return
+	} else if !allowed {
+		util.Responses.Error(w, http.StatusForbidden, "role '"+user.Role+"' is not allowed to create record")
+		return
+	}
 
 	switch r.URL.Query().Get("type") {
 	case "A":

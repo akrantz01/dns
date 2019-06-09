@@ -31,13 +31,6 @@ func create(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 		return
 	}
 
-	// Verify JWT in headers
-	_, err := db.TokenFromString(r.Header.Get("Authorization"), database)
-	if err != nil {
-		util.Responses.Error(w, http.StatusUnauthorized, "failed to authenticate: "+err.Error())
-		return
-	}
-
 	// Validate body by decoding json, checking fields exists, and checking field type
 	var body map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -48,6 +41,29 @@ func create(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 		"name": {"required": "true", "type": "string"},
 	}); err != "" {
 		util.Responses.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	// Verify JWT in headers
+	token, err := db.TokenFromString(r.Header.Get("Authorization"), database)
+	if err != nil {
+		util.Responses.Error(w, http.StatusUnauthorized, "failed to authenticate: "+err.Error())
+		return
+	}
+
+	// Get user from token
+	user, err := db.UserFromToken(token, database)
+	if err != nil {
+		util.Responses.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Check if allowed
+	if allowed, err := db.EvaluateRole(user.Role, body["name"].(string), database); err != nil {
+		util.Responses.Error(w, http.StatusInternalServerError, "failed to evaluate the role: "+err.Error())
+		return
+	} else if !allowed {
+		util.Responses.Error(w, http.StatusForbidden, "role '"+user.Role+"' is not allowed to create record")
 		return
 	}
 
