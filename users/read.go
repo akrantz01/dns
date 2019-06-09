@@ -57,12 +57,19 @@ func read(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 	}
 
 	// Retrieve user from database
-	u, err = db.UserFromDatabase(username, database)
+	rawUser, err := db.UserFromDatabase(username, database)
 	if err != nil {
 		util.Responses.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
+	// Remove password hash from user data
+	userData := map[string]interface{}{}
+	userData["name"] = rawUser.Name
+	userData["username"] = rawUser.Username
+	userData["role"] = rawUser.Role
+	userData["logins"] = rawUser.Tokens
+
 	// Return user data
-	util.Responses.SuccessWithData(w, u)
+	util.Responses.SuccessWithData(w, userData)
 }
