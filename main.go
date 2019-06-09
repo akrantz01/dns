@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/akrantz01/krantz.dev/dns/db"
 	"github.com/akrantz01/krantz.dev/dns/records"
+	"github.com/akrantz01/krantz.dev/dns/roles"
 	"github.com/akrantz01/krantz.dev/dns/users"
 	"github.com/akrantz01/krantz.dev/dns/util"
 	"github.com/gorilla/handlers"
@@ -255,6 +256,7 @@ func main() {
 		http.Handle("/users", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(users.AllUsersHandler(database))))
 		http.Handle("/users/login", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(users.Login(database))))
 		http.Handle("/users/logout", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(users.Logout(database))))
+		http.Handle("/roles", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(roles.AllRolesHandler(database))))
 		if err := http.ListenAndServe(viper.GetString("http.host") + ":" + viper.GetString("http.port"), nil); err != nil { httpErr <- err }
 	}()
 

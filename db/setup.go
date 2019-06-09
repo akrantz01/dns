@@ -34,6 +34,7 @@ func Setup(db *bolt.DB) error {
 		// Setup authentication
 		if _, err := tx.CreateBucketIfNotExists([]byte("users")); err != nil { return err }
 		if _, err := tx.CreateBucketIfNotExists([]byte("tokens")); err != nil { return err }
+		if _, err := tx.CreateBucketIfNotExists([]byte("roles")); err != nil { return err }
 		return nil
 	}); err != nil {
 		return err
