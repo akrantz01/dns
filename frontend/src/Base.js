@@ -18,10 +18,11 @@ import {
     EuiHealth
 } from '@elastic/eui';
 
+import NotFound from './NotFound';
+
 const Records = () => <h2>Records</h2>;
 const Users = () => <h2>Users</h2>;
 const Roles = () => <h2>Roles</h2>;
-const NotFound = () => <h2>Page Not Found</h2>;
 
 export default class extends Component {
     constructor(props) {
