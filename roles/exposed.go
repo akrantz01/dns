@@ -22,3 +22,17 @@ func AllRolesHandler(db *bolt.DB) func(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
+// Handle requests for methods regarding singlar roles
+func SingleRoleHandler(path string, db *bolt.DB) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "GET":
+			read(w, r, path, db)
+			return
+		default:
+			util.Responses.Error(w, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
+	}
+}

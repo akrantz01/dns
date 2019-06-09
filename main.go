@@ -257,6 +257,7 @@ func main() {
 		http.Handle("/users/login", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(users.Login(database))))
 		http.Handle("/users/logout", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(users.Logout(database))))
 		http.Handle("/roles", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(roles.AllRolesHandler(database))))
+		http.Handle("/roles/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(roles.SingleRoleHandler("/roles/", database))))
 		if err := http.ListenAndServe(viper.GetString("http.host") + ":" + viper.GetString("http.port"), nil); err != nil { httpErr <- err }
 	}()
 
