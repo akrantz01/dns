@@ -3,6 +3,7 @@ package db
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -22,6 +23,22 @@ func NewUser(name, username, password, role string) User {
 		Role: role,
 		Tokens: 0,
 	}
+}
+
+func UserFromToken(token *jwt.Token, db *bolt.DB) (User, error) {
+	// Get username from token
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return User{}, fmt.Errorf("invalid JWT claims format")
+	}
+
+	// Get user from token
+	user, err := UserFromDatabase(claims["sub"].(string), db)
+	if err != nil {
+		return User{}, fmt.Errorf("failed to retrieve user: %v", err)
+	}
+
+	return user, nil
 }
 
 func UserFromDatabase(username string, db *bolt.DB) (User, error) {

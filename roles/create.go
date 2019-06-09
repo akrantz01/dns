@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/akrantz01/krantz.dev/dns/db"
 	"github.com/akrantz01/krantz.dev/dns/util"
-	"github.com/dgrijalva/jwt-go"
 	bolt "go.etcd.io/bbolt"
 	"net/http"
 )
@@ -33,23 +32,16 @@ func create(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 		return
 	}
 
-	// Get username from token
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		util.Responses.Error(w, http.StatusBadRequest, "invalid JWT claims format")
-		return
-	}
-
-	// Get user from token
-	user, err := db.UserFromDatabase(claims["sub"].(string), database)
+	// Get u from token
+	u, err := db.UserFromToken(token, database)
 	if err != nil {
-		util.Responses.Error(w, http.StatusUnauthorized, "failed to retrieve user: "+err.Error())
+		util.Responses.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// Check role
-	if user.Role != "admin" {
-		util.Responses.Error(w, http.StatusForbidden, "user must be of role 'admin'")
+	if u.Role != "admin" {
+		util.Responses.Error(w, http.StatusForbidden, "u must be of role 'admin'")
 		return
 	}
 

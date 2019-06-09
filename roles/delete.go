@@ -3,7 +3,6 @@ package roles
 import (
 	"github.com/akrantz01/krantz.dev/dns/db"
 	"github.com/akrantz01/krantz.dev/dns/util"
-	"github.com/dgrijalva/jwt-go"
 	bolt "go.etcd.io/bbolt"
 	"net/http"
 )
@@ -28,17 +27,10 @@ func deleteRole(w http.ResponseWriter, r *http.Request, path string, database *b
 		return
 	}
 
-	// Get username from token
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		util.Responses.Error(w, http.StatusBadRequest, "invalid JWT claims format")
-		return
-	}
-
-	// Get user from database
-	u, err := db.UserFromDatabase(claims["sub"].(string), database)
+	// Get user from token
+	u, err := db.UserFromToken(token, database)
 	if err != nil {
-		util.Responses.Error(w, http.StatusUnauthorized, "failed to authenticate: "+err.Error())
+		util.Responses.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 

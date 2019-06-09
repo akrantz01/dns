@@ -3,7 +3,6 @@ package roles
 import (
 	"github.com/akrantz01/krantz.dev/dns/db"
 	"github.com/akrantz01/krantz.dev/dns/util"
-	"github.com/dgrijalva/jwt-go"
 	bolt "go.etcd.io/bbolt"
 	"net/http"
 	"strings"
@@ -26,21 +25,15 @@ func list(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 		return
 	}
 
-	// Get username from token
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		util.Responses.Error(w, http.StatusBadRequest, "invalid JWT claims format")
+	// Get user from database
+	user, err := db.UserFromToken(token, database)
+	if err != nil {
+		util.Responses.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// Get user from database
-	user, err := db.UserFromDatabase(claims["sub"].(string), database)
-	if err != nil {
-		util.Responses.Error(w, http.StatusBadRequest, "failed to retrieve user: "+err.Error())
-		return
-
 	// Check role
-	} else if user.Role != "admin" {
+	if user.Role != "admin" {
 		util.Responses.Error(w, http.StatusForbidden, "user must be of role 'admin'")
 		return
 	}

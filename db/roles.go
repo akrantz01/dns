@@ -41,3 +41,32 @@ func DeleteRole(name, effect string, db *bolt.DB) error {
 		return tx.Bucket([]byte("roles")).Delete([]byte(name+"-"+effect))
 	})
 }
+
+func EvaluateRole(name, record string, db *bolt.DB) (bool, error) {
+	// Allow by default
+	approved := true
+
+	// Retrieve role
+	allow, deny, err := GetRole(name, db)
+	if err != nil {
+		return false, err
+	}
+
+	// Evaluate rules if they exist
+	if deny != "" {
+		matched, err := regexp.Match(deny, []byte(record))
+		if err != nil {
+			return false, err
+		}
+		approved = !matched
+	}
+	if allow != "" {
+		matched, err := regexp.Match(allow, []byte(record))
+		if err != nil {
+			return false, err
+		}
+		approved = matched
+	}
+
+	return approved, nil
+}
