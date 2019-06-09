@@ -23,6 +23,7 @@ import NotFound from './NotFound';
 const Records = () => <h2>Records</h2>;
 const Users = () => <h2>Users</h2>;
 const Roles = () => <h2>Roles</h2>;
+const Profile = () => <h2>Profile</h2>;
 
 export default class extends Component {
     constructor(props) {
@@ -46,9 +47,9 @@ export default class extends Component {
                                 <EuiHeaderLogo iconType="indexManagementApp" href="#" aria-label="Go to home page">DNS Management</EuiHeaderLogo>
                             </EuiHeaderSectionItem>
                             <EuiHeaderLinks>
-                                <EuiHeaderLink href="#" isActive>Records</EuiHeaderLink>
-                                <EuiHeaderLink href="#">Users</EuiHeaderLink>
-                                <EuiHeaderLink href="#">Roles</EuiHeaderLink>
+                                <EuiHeaderLink href="#/records" isActive>Records</EuiHeaderLink>
+                                <EuiHeaderLink href="#/users">Users</EuiHeaderLink>
+                                <EuiHeaderLink href="#/roles">Roles</EuiHeaderLink>
                             </EuiHeaderLinks>
                         </EuiHeaderSection>
 
@@ -91,11 +92,11 @@ export default class extends Component {
                                                     <EuiFlexItem>
                                                         <EuiFlexGroup justifyContent="spaceAround">
                                                             <EuiFlexItem grow={false}>
-                                                                <EuiLink href="">Edit profile</EuiLink>
+                                                                <EuiLink href="#/profile">Edit profile</EuiLink>
                                                             </EuiFlexItem>
 
                                                             <EuiFlexItem grow={false}>
-                                                                <EuiLink href="">Log out</EuiLink>
+                                                                <EuiLink onClick={() => window.alert("logged out")}>Log out</EuiLink>
                                                             </EuiFlexItem>
                                                         </EuiFlexGroup>
                                                     </EuiFlexItem>
@@ -114,9 +115,10 @@ export default class extends Component {
                     </EuiHeader>
 
                     <Switch>
-                        <Route path="/" exact component={Records}/>
-                        <Route path="/users/" component={Users}/>
-                        <Route path="/roles/" component={Roles}/>
+                        <Route path="/records" component={Records}/>
+                        <Route path="/users" component={Users}/>
+                        <Route path="/roles" component={Roles}/>
+                        <Route path="/profile" component={Profile}/>
                         <Route component={NotFound}/>
                     </Switch>
                 </div>
