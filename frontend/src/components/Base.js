@@ -42,6 +42,13 @@ class Base extends Component {
 
     toggleUserMenuButtonClick = () => (this.state.loggedIn) ? this.setState({userOpen: !this.state.userOpen}) : "";
 
+    onLogin = () => this.setState({loggedIn: Authentication.isAuthenticated()});
+    onLogout = () => {
+        Authentication.reset();
+        this.setState({userOpen: !this.state.userOpen, loggedIn: false});
+        this.forceUpdate();
+    };
+
     render() {
         return (
             <div>
@@ -101,7 +108,7 @@ class Base extends Component {
                                                         </EuiFlexItem>
 
                                                         <EuiFlexItem grow={false}>
-                                                            <EuiLink onClick={() => window.alert("logged out")}>Log out</EuiLink>
+                                                            <EuiLink onClick={this.onLogout.bind(this)}>Log out</EuiLink>
                                                         </EuiFlexItem>
                                                     </EuiFlexGroup>
                                                 </EuiFlexItem>
@@ -120,7 +127,7 @@ class Base extends Component {
                 </EuiHeader>
 
                 <Switch>
-                    { !Authentication.isAuthenticated() && <Route exact path="/" render={(props) => <Login {...props} reload={this.forceUpdate.bind(this)}/>}/> }
+                    { !Authentication.isAuthenticated() && <Route exact path="/" render={(props) => <Login {...props} reload={this.forceUpdate.bind(this)} loginCb={this.onLogin.bind(this)}/>}/> }
                     { !Authentication.isAuthenticated() && <Redirect from="/" to="/"/>}
 
                     { Authentication.isAuthenticated() && <Redirect exact from="/" to="/records"/>}

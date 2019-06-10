@@ -9,4 +9,10 @@ export default class Authentication {
     // Getters and setters for user data
     static setUser = (user) => localStorage.setItem("user", JSON.stringify(user));
     static getUser = () => JSON.parse(localStorage.getItem("user")) || {name: ""};
+
+    // Reset login info
+    static reset = () => {
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
+    }
 }

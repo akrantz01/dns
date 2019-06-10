@@ -30,6 +30,7 @@ export default class extends Component {
         console.log("logging in...");
         localStorage.setItem("token", "t.ok.en");
         localStorage.setItem("user", JSON.stringify({"name": "Test User", "username": "test", "role": "user"}));
+        this.props.loginCb();
         this.props.reload();
     };
 
