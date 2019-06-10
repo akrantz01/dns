@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { HashRouter, Route, Switch } from 'react-router-dom';
+import {Redirect, Route, Switch, withRouter} from 'react-router-dom';
 import {
     EuiHeader,
     EuiHeaderSection,
@@ -15,114 +15,124 @@ import {
     EuiText,
     EuiHeaderLinks,
     EuiHeaderLink,
-    EuiHealth
+    EuiHealth,
+    EuiIcon
 } from '@elastic/eui';
 
+import Authentication from '../user';
+
 import NotFound from './NotFound';
+import Login from './Login';
 
 const Records = () => <h2>Records</h2>;
 const Users = () => <h2>Users</h2>;
 const Roles = () => <h2>Roles</h2>;
 const Profile = () => <h2>Profile</h2>;
 
-export default class extends Component {
+class Base extends Component {
     constructor(props) {
         super(props);
 
         this.state = {
             userOpen: false,
-            status: "success"
+            status: "success",
+            loggedIn: Authentication.isAuthenticated()
         }
     }
 
-    toggleUserMenuButtonClick = () => this.setState({userOpen: !this.state.userOpen});
+    toggleUserMenuButtonClick = () => (this.state.loggedIn) ? this.setState({userOpen: !this.state.userOpen}) : "";
 
     render() {
         return (
-            <HashRouter>
-                <div>
-                    <EuiHeader>
-                        <EuiHeaderSection grow={true}>
-                            <EuiHeaderSectionItem border="right">
-                                <EuiHeaderLogo iconType="indexManagementApp" href="#" aria-label="Go to home page">DNS Management</EuiHeaderLogo>
-                            </EuiHeaderSectionItem>
-                            <EuiHeaderLinks>
-                                <EuiHeaderLink href="#/records" isActive>Records</EuiHeaderLink>
-                                <EuiHeaderLink href="#/users">Users</EuiHeaderLink>
-                                <EuiHeaderLink href="#/roles">Roles</EuiHeaderLink>
-                            </EuiHeaderLinks>
-                        </EuiHeaderSection>
+            <div>
+                <EuiHeader>
+                    <EuiHeaderSection grow={true}>
+                        <EuiHeaderSectionItem border="right">
+                            <EuiHeaderLogo iconType="indexManagementApp" href={(Authentication.isAuthenticated()) ? "#/records" : "#"} aria-label="Go to home page">DNS Management</EuiHeaderLogo>
+                        </EuiHeaderSectionItem>
+                        <EuiHeaderLinks>
+                            { Authentication.isAuthenticated() && <EuiHeaderLink href="#/records" isActive>Records</EuiHeaderLink> }
+                            { Authentication.getUser().role === "admin" && <EuiHeaderLink href="#/users">Users</EuiHeaderLink> }
+                            { Authentication.getUser().role === "admin" && <EuiHeaderLink href="#/roles">Roles</EuiHeaderLink> }
+                        </EuiHeaderLinks>
+                    </EuiHeaderSection>
 
-                        <EuiHeaderSection side="right">
-                            <EuiHeaderSectionItem>
-                                <EuiPopover
-                                    id="headerUserMenu"
-                                    ownFocus
-                                    button={
-                                        <EuiHeaderSectionItemButton
-                                            aria-controls="headerUserMenu"
-                                            aria-expanded={this.state.userOpen}
-                                            aria-haspopup="true"
-                                            aria-label="Account menu"
-                                            onClick={this.toggleUserMenuButtonClick.bind(this)}>
-                                            <EuiAvatar name="John Username" size="s" />
-                                        </EuiHeaderSectionItemButton>
-                                    }
-                                    isOpen={this.state.userOpen}
-                                    anchorPosition="downRight"
-                                    closePopover={this.toggleUserMenuButtonClick.bind(this)}
-                                    panelPaddingSize="none">
-                                    <div style={{ width: 320 }}>
-                                        <EuiFlexGroup
-                                            gutterSize="m"
-                                            className="euiHeaderProfile"
-                                            responsive={false}>
-                                            <EuiFlexItem grow={false}>
-                                                <EuiAvatar name="John Username" size="xl" />
-                                            </EuiFlexItem>
+                    <EuiHeaderSection side="right">
+                        <EuiHeaderSectionItem>
+                            <EuiPopover
+                                id="headerUserMenu"
+                                ownFocus
+                                button={
+                                    <EuiHeaderSectionItemButton
+                                        aria-controls="headerUserMenu"
+                                        aria-expanded={this.state.userOpen}
+                                        aria-haspopup="true"
+                                        aria-label="Account menu"
+                                        onClick={this.toggleUserMenuButtonClick.bind(this)}>
+                                        { !this.state.loggedIn && <EuiIcon type="lock" size="m"/> }
+                                        { this.state.loggedIn && <EuiAvatar name={Authentication.getUser().name} size="s" />}
+                                    </EuiHeaderSectionItemButton>
+                                }
+                                isOpen={this.state.userOpen}
+                                anchorPosition="downRight"
+                                closePopover={this.toggleUserMenuButtonClick.bind(this)}
+                                panelPaddingSize="none">
+                                <div style={{ width: 320 }}>
+                                    <EuiFlexGroup
+                                        gutterSize="m"
+                                        className="euiHeaderProfile"
+                                        responsive={false}>
+                                        <EuiFlexItem grow={false}>
+                                            <EuiAvatar name={Authentication.getUser().name} size="xl" />
+                                        </EuiFlexItem>
 
-                                            <EuiFlexItem>
-                                                <EuiText>
-                                                    <p>John Username</p>
-                                                </EuiText>
+                                        <EuiFlexItem>
+                                            <EuiText>
+                                                <p>{Authentication.getUser().name}</p>
+                                            </EuiText>
 
-                                                <EuiSpacer size="m" />
+                                            <EuiSpacer size="m" />
 
-                                                <EuiFlexGroup>
-                                                    <EuiFlexItem>
-                                                        <EuiFlexGroup justifyContent="spaceAround">
-                                                            <EuiFlexItem grow={false}>
-                                                                <EuiLink href="#/profile">Edit profile</EuiLink>
-                                                            </EuiFlexItem>
+                                            <EuiFlexGroup>
+                                                <EuiFlexItem>
+                                                    <EuiFlexGroup justifyContent="spaceAround">
+                                                        <EuiFlexItem grow={false}>
+                                                            <EuiLink href="#/profile">Edit profile</EuiLink>
+                                                        </EuiFlexItem>
 
-                                                            <EuiFlexItem grow={false}>
-                                                                <EuiLink onClick={() => window.alert("logged out")}>Log out</EuiLink>
-                                                            </EuiFlexItem>
-                                                        </EuiFlexGroup>
-                                                    </EuiFlexItem>
-                                                </EuiFlexGroup>
-                                            </EuiFlexItem>
-                                        </EuiFlexGroup>
-                                    </div>
-                                </EuiPopover>
-                            </EuiHeaderSectionItem>
-                            <EuiHeaderSectionItem>
-                                <EuiHeaderSectionItemButton>
-                                    <EuiHealth color={this.state.status}/>
-                                </EuiHeaderSectionItemButton>
-                            </EuiHeaderSectionItem>
-                        </EuiHeaderSection>
-                    </EuiHeader>
+                                                        <EuiFlexItem grow={false}>
+                                                            <EuiLink onClick={() => window.alert("logged out")}>Log out</EuiLink>
+                                                        </EuiFlexItem>
+                                                    </EuiFlexGroup>
+                                                </EuiFlexItem>
+                                            </EuiFlexGroup>
+                                        </EuiFlexItem>
+                                    </EuiFlexGroup>
+                                </div>
+                            </EuiPopover>
+                        </EuiHeaderSectionItem>
+                        <EuiHeaderSectionItem>
+                            <EuiHeaderSectionItemButton>
+                                <EuiHealth color={this.state.status}/>
+                            </EuiHeaderSectionItemButton>
+                        </EuiHeaderSectionItem>
+                    </EuiHeaderSection>
+                </EuiHeader>
 
-                    <Switch>
-                        <Route path="/records" component={Records}/>
-                        <Route path="/users" component={Users}/>
-                        <Route path="/roles" component={Roles}/>
-                        <Route path="/profile" component={Profile}/>
-                        <Route component={NotFound}/>
-                    </Switch>
-                </div>
-            </HashRouter>
+                <Switch>
+                    { !Authentication.isAuthenticated() && <Route exact path="/" render={(props) => <Login {...props} reload={this.forceUpdate.bind(this)}/>}/> }
+                    { !Authentication.isAuthenticated() && <Redirect from="/" to="/"/>}
+
+                    { Authentication.isAuthenticated() && <Redirect exact from="/" to="/records"/>}
+                    { Authentication.isAuthenticated() && <Route path="/records" component={Records}/> }
+                    { Authentication.isAuthenticated() && Authentication.getUser().role === "admin" && <Route path="/users" component={Users}/> }
+                    { Authentication.isAuthenticated() && Authentication.getUser().role === "admin" && <Route path="/roles" component={Roles}/> }
+                    { Authentication.isAuthenticated() && <Route path="/profile" component={Profile}/> }
+                    <Route component={NotFound}/>
+                </Switch>
+            </div>
         )
     }
 }
+
+export default withRouter(Base);
