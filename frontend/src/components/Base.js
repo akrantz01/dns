@@ -16,10 +16,12 @@ import {
     EuiHeaderLinks,
     EuiHeaderLink,
     EuiHealth,
-    EuiIcon
+    EuiIcon,
+    EuiGlobalToastList
 } from '@elastic/eui';
 
 import Authentication from '../user';
+import { ApiAuthorization } from "../api";
 
 import NotFound from './NotFound';
 import Login from './Login';
@@ -36,7 +38,8 @@ class Base extends Component {
         this.state = {
             userOpen: false,
             status: "success",
-            loggedIn: Authentication.isAuthenticated()
+            loggedIn: Authentication.isAuthenticated(),
+            toasts: []
         }
     }
 
@@ -44,14 +47,32 @@ class Base extends Component {
 
     onLogin = () => this.setState({loggedIn: Authentication.isAuthenticated()});
     onLogout = () => {
+        ApiAuthorization.Logout(Authentication.getToken())
+            .then(() => this.addToast("Successfully logged out", "", "success"))
+            .catch(err => {
+                switch (err.response.status) {
+                    case 401:
+                        this.addToast("Unable to logout", "Authentication token is invalid", "danger");
+                        break;
+                    case 500:
+                        this.addToast("Unable to logout", `Internal server error: ${err.response.data.reason}`);
+                        break;
+                    default:
+                        break;
+                }
+        });
         Authentication.reset();
         this.setState({userOpen: !this.state.userOpen, loggedIn: false});
         this.forceUpdate();
     };
 
+    addToast = (title, text, color) => this.setState({toasts: this.state.toasts.concat({title: title, text: text, color: color, id: Math.ceil(Math.random()*10000000)})});
+    removeToast = (removedToast) => this.setState(prevState => ({toasts: prevState.toasts.filter(toast => toast.id !== removedToast.id)}));
+
     render() {
         return (
             <div>
+                <EuiGlobalToastList toasts={this.state.toasts} dismissToast={this.removeToast.bind(this)} toastLifeTimeMs={2500}/>
                 <EuiHeader>
                     <EuiHeaderSection grow={true}>
                         <EuiHeaderSectionItem border="right">
@@ -127,7 +148,7 @@ class Base extends Component {
                 </EuiHeader>
 
                 <Switch>
-                    { !Authentication.isAuthenticated() && <Route exact path="/" render={(props) => <Login {...props} reload={this.forceUpdate.bind(this)} loginCb={this.onLogin.bind(this)}/>}/> }
+                    { !Authentication.isAuthenticated() && <Route exact path="/" render={(props) => <Login {...props} addToast={this.addToast.bind(this)} reload={this.forceUpdate.bind(this)} loginCb={this.onLogin.bind(this)}/>}/> }
                     { !Authentication.isAuthenticated() && <Redirect from="/" to="/"/>}
 
                     { Authentication.isAuthenticated() && <Redirect exact from="/" to="/records"/>}
