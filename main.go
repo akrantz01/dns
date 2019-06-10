@@ -9,6 +9,7 @@ import (
 	"github.com/akrantz01/krantz.dev/dns/util"
 	"github.com/gorilla/handlers"
 	"github.com/miekg/dns"
+	"github.com/rs/cors"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	bolt "go.etcd.io/bbolt"
@@ -251,13 +252,17 @@ func main() {
 	go func() {
 		if viper.GetBool("http.disabled") { return }
 
-		http.Handle("/records", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(records.AllRecordsHandler(database))))
-		http.Handle("/records/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(records.SingleRecordHandler("/records/", database))))
-		http.Handle("/users", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(users.AllUsersHandler(database))))
-		http.Handle("/users/login", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(users.Login(database))))
-		http.Handle("/users/logout", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(users.Logout(database))))
-		http.Handle("/roles", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(roles.AllRolesHandler(database))))
-		http.Handle("/roles/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(roles.SingleRoleHandler("/roles/", database))))
+		// Allow CORS
+		c := cors.AllowAll()
+
+		// Setup API routes
+		http.Handle("/api/records", c.Handler(handlers.LoggingHandler(os.Stdout, http.HandlerFunc(records.AllRecordsHandler(database)))))
+		http.Handle("/api/records/", c.Handler(handlers.LoggingHandler(os.Stdout, http.HandlerFunc(records.SingleRecordHandler("/api/records/", database)))))
+		http.Handle("/api/users", c.Handler(handlers.LoggingHandler(os.Stdout, http.HandlerFunc(users.AllUsersHandler(database)))))
+		http.Handle("/api/users/login", c.Handler(handlers.LoggingHandler(os.Stdout, http.HandlerFunc(users.Login(database)))))
+		http.Handle("/api/users/logout", c.Handler(handlers.LoggingHandler(os.Stdout, http.HandlerFunc(users.Logout(database)))))
+		http.Handle("/api/roles", c.Handler(handlers.LoggingHandler(os.Stdout, http.HandlerFunc(roles.AllRolesHandler(database)))))
+		http.Handle("/api/roles/", c.Handler(handlers.LoggingHandler(os.Stdout, http.HandlerFunc(roles.SingleRoleHandler("/api/roles/", database)))))
 		if err := http.ListenAndServe(viper.GetString("http.host") + ":" + viper.GetString("http.port"), nil); err != nil { httpErr <- err }
 	}()
 
