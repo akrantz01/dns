@@ -32,59 +32,64 @@ func list(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 			return
 		}
 
-		records := make(map[string][]string)
+		var rawRecords []map[string]string
 		for _, record := range r.URL.Query()["type"] {
-			records[record] = []string{}
 			if err := database.View(func(tx *bolt.Tx) error {
 				return tx.Bucket([]byte(record)).ForEach(func(k, v []byte) error {
-					records[record] = append(records[record], strings.Split(string(k), "*")[0])
+					rawRecords = append(rawRecords, map[string]string{"name": strings.Split(string(k), "*")[0], "type": record})
 					return nil
 				})
 			}); err != nil {
-				util.Responses.Error(w, http.StatusInternalServerError, "failed to retrieve all records: " + err.Error())
+				util.Responses.Error(w, http.StatusInternalServerError, "failed to retrieve all records: "+err.Error())
 				return
 			}
-			records[record] = util.RemoveDuplicates(records[record])
 		}
 
+		// Remove duplicates from array
+		encountered := map[string]bool{}
+		var records []map[string]string
+		for _, v := range rawRecords {
+			if _, ok := encountered[v["name"]]; !ok {
+				encountered[v["name"]] = true
+				records = append(records, v)
+			}
+		}
+
+		// Return empty array if none
+		if records == nil {
+			util.Responses.SuccessWithData(w, []string{})
+			return
+		}
 		util.Responses.SuccessWithData(w, records)
 		return
 	}
 
-	// List all records
-	records := map[string][]string{
-		"A":      {},
-		"AAAA":   {},
-		"CNAME":  {},
-		"MX":     {},
-		"LOC":    {},
-		"SRV":    {},
-		"SPF":    {},
-		"TXT":    {},
-		"NS":     {},
-		"CAA":    {},
-		"PTR":    {},
-		"CERT":   {},
-		"DNSKEY": {},
-		"DS":     {},
-		"NAPTR":  {},
-		"SMIMEA": {},
-		"SSHFP":  {},
-		"TLSA":   {},
-		"URI":    {},
-	}
-	for record := range records {
+	var rawRecords []map[string]string
+	for _, record := range []string{"A", "AAAA", "CNAME", "MX", "LOC", "SRV", "SPF", "TXT", "NS", "CAA", "PTR", "CERT", "DNSKEY", "DS", "NAPTR", "SMIMEA", "SSHFP", "TLSA", "URI"} {
 		if err := database.View(func(tx *bolt.Tx) error {
 			return tx.Bucket([]byte(record)).ForEach(func(k, v []byte) error {
-				records[record] = append(records[record], strings.Split(string(k), "*")[0])
+				rawRecords = append(rawRecords, map[string]string{"name": strings.Split(string(k), "*")[0], "type": record})
 				return nil
 			})
 		}); err != nil {
-			util.Responses.Error(w, http.StatusInternalServerError, "failed to retrieve all records: " + err.Error())
-			return
+			util.Responses.Error(w, http.StatusInternalServerError, "failed to retrieve all records: "+err.Error())
 		}
-		records[record] = util.RemoveDuplicates(records[record])
 	}
 
+	// Remove duplicates from array
+	encountered := map[string]bool{}
+	var records []map[string]string
+	for _, v := range rawRecords {
+		if _, ok := encountered[v["name"]]; !ok {
+			encountered[v["name"]] = true
+			records = append(records, v)
+		}
+	}
+
+	// Return empty array if none
+	if records == nil {
+		util.Responses.SuccessWithData(w, []string{})
+		return
+	}
 	util.Responses.SuccessWithData(w, records)
 }
