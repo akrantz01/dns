@@ -25,8 +25,8 @@ import { ApiAuthorization } from "../api";
 
 import NotFound from './NotFound';
 import Login from './Login';
+import Records from './Records';
 
-const Records = () => <h2>Records</h2>;
 const Users = () => <h2>Users</h2>;
 const Roles = () => <h2>Roles</h2>;
 const Profile = () => <h2>Profile</h2>;
@@ -152,7 +152,7 @@ class Base extends Component {
                     { !Authentication.isAuthenticated() && <Redirect from="/" to="/"/>}
 
                     { Authentication.isAuthenticated() && <Redirect exact from="/" to="/records"/>}
-                    { Authentication.isAuthenticated() && <Route path="/records" component={Records}/> }
+                    { Authentication.isAuthenticated() && <Route path="/records" render={(props) => <Records {...props} addToast={this.addToast.bind(this)}/>}/> }
                     { Authentication.isAuthenticated() && Authentication.getUser().role === "admin" && <Route path="/users" component={Users}/> }
                     { Authentication.isAuthenticated() && Authentication.getUser().role === "admin" && <Route path="/roles" component={Roles}/> }
                     { Authentication.isAuthenticated() && <Route path="/profile" component={Profile}/> }
