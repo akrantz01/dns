@@ -4,7 +4,6 @@ package util
 
 import (
 	"github.com/miekg/dns"
-	"log"
 	"regexp"
 	"strconv"
 )
@@ -94,8 +93,6 @@ func parseLatLong(d, m, s string, limit uint64) (uint32, bool) {
 func ParseLOCString(l string, version uint8, header dns.RR_Header) *dns.LOC {
 	loc := new(dns.LOC)
 
-	log.Println(locReD + " (N|S) " + locReD + " (E|W)" + locReM + locReOM + locReOM + locReOM)
-
 	// The string l will be in the following format:
 	//
 	// d1 [m1 [s1]] {"N"|"S"} d2 [m2 [s2]] {"E"|"W"}
@@ -115,7 +112,6 @@ func ParseLOCString(l string, version uint8, header dns.RR_Header) *dns.LOC {
 
 	parts := locRe.FindStringSubmatch(l)
 	if parts == nil {
-		log.Println("regex")
 		return nil
 	}
 
@@ -142,7 +138,6 @@ func ParseLOCString(l string, version uint8, header dns.RR_Header) *dns.LOC {
 	// Convert latitude and longitude to a 32-bit unsigned integer
 	latitude, ok := parseLatLong(parts[1], parts[2], parts[3], 90)
 	if !ok {
-		log.Println("latitude")
 		return nil
 	}
 	loc.Latitude = dns.LOC_EQUATOR
@@ -154,7 +149,6 @@ func ParseLOCString(l string, version uint8, header dns.RR_Header) *dns.LOC {
 
 	longitude, ok := parseLatLong(parts[5], parts[6], parts[7], 180)
 	if !ok {
-		log.Println("longitude")
 		return nil
 	}
 	loc.Longitude = dns.LOC_PRIMEMERIDIAN
@@ -176,7 +170,6 @@ func ParseLOCString(l string, version uint8, header dns.RR_Header) *dns.LOC {
 	// == 42849672.95
 	f, err := strconv.ParseFloat(parts[9], 64)
 	if err != nil || f < -dns.LOC_ALTITUDEBASE || f > 42849672.95 {
-		log.Println("altitude")
 		return nil
 	}
 	loc.Altitude = (uint32)((f + dns.LOC_ALTITUDEBASE) * 100)
@@ -188,27 +181,19 @@ func ParseLOCString(l string, version uint8, header dns.RR_Header) *dns.LOC {
 	//
 	// 0x12 == 1e2cm == 1m
 	if loc.Size, ok = parseSizePrecision(parts[10], 0x12); !ok {
-		log.Println("size")
 		return nil
 	}
 	// 0x16 == 1e6cm == 10,000m == 10km
 	if loc.HorizPre, ok = parseSizePrecision(parts[11], 0x16); !ok {
-		log.Println("horiz")
 		return nil
 	}
 	// 0x13 == 1e3cm == 10m
 	if loc.VertPre, ok = parseSizePrecision(parts[12], 0x13); !ok {
-		log.Println("vert")
 		return nil
 	}
 
 	loc.Version = version
 	loc.Hdr = header
-
-	log.Println("Inside")
-	log.Println(loc)
-	log.Println(version)
-	log.Println(header)
 
 	return loc
 }
