@@ -65,7 +65,9 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 		case dns.TypeLOC:
 			record :=  db.Get.LOC(q.Name)
 			if record != nil {
-				r.Answer = append(r.Answer, &dns.LOC{Hdr: hdr, Version: record.Version, Size: record.Size, HorizPre: record.HorizontalPrecision, VertPre: record.VerticalPrecision, Latitude: record.Latitude, Longitude: record.Longitude, Altitude: record.Altitude})
+				locString, vers := record.ToParsable()
+				log.Println(locString)
+				r.Answer = append(r.Answer, util.ParseLOCString(locString, vers, hdr))
 			}
 		case dns.TypeSRV:
 			record :=  db.Get.SRV(q.Name)

@@ -105,14 +105,32 @@ func (g get) LOC(qname string) *LOC {
 		if vertValue := records.Get([]byte(shortenedName + "*vert")); len(vertValue) != 0 {
 			l.VerticalPrecision = vertValue[0]
 		}
-		if latValue := records.Get([]byte(shortenedName + "*lat")); len(latValue) != 0 {
-			l.Latitude = binary.BigEndian.Uint32(latValue)
-		}
-		if longValue := records.Get([]byte(shortenedName + "*long")); len(longValue) != 0 {
-			l.Longitude = binary.BigEndian.Uint32(longValue)
-		}
 		if altValue := records.Get([]byte(shortenedName + "*alt")); len(altValue) != 0 {
 			l.Altitude = binary.BigEndian.Uint32(altValue)
+		}
+		if latDegValue := records.Get([]byte(shortenedName + "*lat-degrees")); len(latDegValue) != 0 {
+			l.LatDegrees = latDegValue[0]
+		}
+		if latMinValue := records.Get([]byte(shortenedName + "*lat-minutes")); len(latMinValue) != 0 {
+			l.LatMinutes = latMinValue[0]
+		}
+		if latSecValue := records.Get([]byte(shortenedName + "*lat-seconds")); len(latSecValue) != 0 {
+			l.LatSeconds = latSecValue[0]
+		}
+		if latDirValue := records.Get([]byte(shortenedName + "*lat-direction")); len(latDirValue) != 0 {
+			l.LatDirection = string(latDirValue)
+		}
+		if longDegValue := records.Get([]byte(shortenedName + "*long-degrees")); len(longDegValue) != 0 {
+			l.LatDegrees = longDegValue[0]
+		}
+		if longMinValue := records.Get([]byte(shortenedName + "*long-minutes")); len(longMinValue) != 0 {
+			l.LatMinutes = longMinValue[0]
+		}
+		if longSecValue := records.Get([]byte(shortenedName + "*long-seconds")); len(longSecValue) != 0 {
+			l.LatSeconds = longSecValue[0]
+		}
+		if longDirValue := records.Get([]byte(shortenedName + "*long-direction")); len(longDirValue) != 0 {
+			l.LongDirection = string(longDirValue)
 		}
 
 		return nil

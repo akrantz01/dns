@@ -44,15 +44,11 @@ func (s set) MX(name string, priority uint16, host string) error {
 	})
 }
 
-func (s set) LOC(name string, version, size, horizontal, vertical uint8, latitude, longitude, altitude uint32) error {
+func (s set) LOC(name string, version, size, horizontal, vertical uint8, altitude uint32, latDegrees, latMinutes, latSeconds uint8, latDirection string, longDegrees, longMinutes, longSeconds uint8, longDirection string) error {
 	return s.Db.Update(func(tx *bolt.Tx) error {
 		records := tx.Bucket([]byte("LOC"))
 
 		// Convert uint32s to binary
-		lat := make([]byte, binary.MaxVarintLen32)
-		binary.BigEndian.PutUint32(lat, latitude)
-		lon := make([]byte, binary.MaxVarintLen32)
-		binary.BigEndian.PutUint32(lon, longitude)
 		alt := make([]byte, binary.MaxVarintLen32)
 		binary.BigEndian.PutUint32(alt, altitude)
 
@@ -69,13 +65,31 @@ func (s set) LOC(name string, version, size, horizontal, vertical uint8, latitud
 		if err := records.Put([]byte(name + "*vert"), []byte{vertical}); err != nil {
 			return err
 		}
-		if err := records.Put([]byte(name + "*lat"), lat); err != nil {
-			return err
-		}
-		if err := records.Put([]byte(name + "*long"), lon); err != nil {
-			return err
-		}
 		if err := records.Put([]byte(name + "*alt"), alt); err != nil {
+			return err
+		}
+		if err := records.Put([]byte(name + "*lat-degrees"), []byte{latDegrees}); err != nil {
+			return err
+		}
+		if err := records.Put([]byte(name + "*lat-minutes"), []byte{latMinutes}); err != nil {
+			return err
+		}
+		if err := records.Put([]byte(name + "*lat-seconds"), []byte{latSeconds}); err != nil {
+			return err
+		}
+		if err := records.Put([]byte(name + "*lat-direction"), []byte(latDirection)); err != nil {
+			return err
+		}
+		if err := records.Put([]byte(name + "*long-degrees"), []byte{longDegrees}); err != nil {
+			return err
+		}
+		if err := records.Put([]byte(name + "*long-minutes"), []byte{longMinutes}); err != nil {
+			return err
+		}
+		if err := records.Put([]byte(name + "*long-seconds"), []byte{longSeconds}); err != nil {
+			return err
+		}
+		if err := records.Put([]byte(name + "*long-direction"), []byte(longDirection)); err != nil {
 			return err
 		}
 

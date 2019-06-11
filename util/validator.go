@@ -1,6 +1,10 @@
 package util
 
-import "net"
+import (
+	"net"
+	"strconv"
+	"strings"
+)
 
 // Validate a fields in a JSON request body
 // Returns a string to be used as an error or empty if no error
@@ -44,11 +48,26 @@ func ValidateBody(body map[string]interface{}, keys []string, options map[string
 				return "field '" + key + "' must be a string", valid
 			} else if body[key].(string) == "" && options[key]["required"] == "true" {
 				return "field '" + key + "' must be of length longer than 0", valid
+			} else if valuesString, ok := options[key]["oneOf"]; ok {
+				values := strings.Split(valuesString, ",")
+				if !StringInArray(body[key].(string), values) {
+					return "field '" + key + "' must be one of " + valuesString, valid
+				}
 			}
 
 		case "uint8":
 			if !Types.Uint8(body[key]) {
 				return "field '" + key + "' must be an integer between 0 and 255", valid
+			} else if minString, ok := options[key]["min"]; ok {
+				min, _ := strconv.ParseInt(minString, 10, 8)
+				if uint8(min) > uint8(body[key].(float64)) {
+					return "field '" + key + "' must be greater than " + minString, valid
+				}
+			} else if maxString, ok := options[key]["max"]; ok {
+				max, _ := strconv.ParseInt(maxString, 10, 8)
+				if uint8(max) < uint8(body[key].(float64)) {
+					return "field '" + key + "' must be less than " + maxString, valid
+				}
 			}
 
 		case "uint16":

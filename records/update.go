@@ -187,14 +187,20 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 		}
 
 		// Get valid values in body
-		err, valid := util.ValidateBody(body, []string{"version", "size", "horizontal-precision", "vertical-precision", "latitude", "longitude"}, map[string]map[string]string{
-			"version": {"type": "uint8", "required": "false"},
-			"size": {"type": "uint8", "required": "false"},
-			"horizontal-precision": {"type": "uint8", "required": "false"},
-			"vertical-precision": {"type": "uint8", "required": "false"},
-			"latitude": {"type": "uint32", "required": "false"},
-			"longitude": {"type": "uint32", "required": "false"},
-			"altitude": {"type": "uint32", "required": "false"},
+		err, valid := util.ValidateBody(body, []string{"version", "size", "horizontal-precision", "vertical-precision", "altitude", "lat-degrees", "lat-minutes", "lat-seconds", "lat-direction", "long-degrees", "long-minutes", "long-seconds", "long-direction"}, map[string]map[string]string{
+			"version": {"type": "uint8", "required": "true"},
+			"size": {"type": "uint8", "required": "true"},
+			"horizontal-precision": {"type": "uint8", "required": "true"},
+			"vertical-precision": {"type": "uint8", "required": "true"},
+			"altitude": {"type": "uint32", "required": "true"},
+			"lat-degrees": {"type": "uint8", "required": "true", "min": "0", "max": "90"},
+			"lat-minutes": {"type": "uint8", "required": "true", "min": "0", "max": "60"},
+			"lat-seconds": {"type": "uint8", "required": "true", "min": "0", "max": "60"},
+			"lat-direction": {"type": "string", "required": "true", "oneOf": "N,S"},
+			"long-degrees": {"type": "uint8", "required": "true", "min": "0", "max": "180"},
+			"long-minutes": {"type": "uint8", "required": "true", "min": "0", "max": "60"},
+			"long-seconds": {"type": "uint8", "required": "true", "min": "0", "max": "60"},
+			"long-direction": {"type": "string", "required": "true", "oneOf": "E,W"},
 		})
 		if err != "" {
 			util.Responses.Error(w, http.StatusBadRequest, err)
@@ -214,18 +220,36 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 		if valid["vertical-precision"] {
 			record.VerticalPrecision = uint8(body["vertical-precision"].(float64))
 		}
-		if valid["latitude"] {
-			record.Latitude = uint32(body["latitude"].(float64))
-		}
-		if valid["longitude"] {
-			record.Longitude = uint32(body["longitude"].(float64))
-		}
 		if valid["altitude"] {
 			record.Altitude = uint32(body["altitude"].(float64))
 		}
+		if valid["lat-degrees"] {
+			record.LatDegrees = uint8(body["lat-degrees"].(float64))
+		}
+		if valid["lat-minutes"] {
+			record.LatMinutes = uint8(body["lat-minutes"].(float64))
+		}
+		if valid["lat-seconds"] {
+			record.LatSeconds = uint8(body["lat-seconds"].(float64))
+		}
+		if valid["lat-direction"] {
+			record.LatDirection = body["lat-direction"].(string)
+		}
+		if valid["long-degrees"] {
+			record.LongDegrees = uint8(body["long-degrees"].(float64))
+		}
+		if valid["long-minutes"] {
+			record.LongMinutes = uint8(body["long-minutes"].(float64))
+		}
+		if valid["long-seconds"] {
+			record.LongSeconds = uint8(body["long-seconds"].(float64))
+		}
+		if valid["long-direction"] {
+			record.LongDirection = body["long-direction"].(string)
+		}
 
 		// Write updated values to database
-		if err := db.Set.LOC(recordName, record.Version, record.Size, record.HorizontalPrecision, record.VerticalPrecision, record.Latitude, record.Longitude, record.Altitude); err != nil {
+		if err := db.Set.LOC(recordName, record.Version, record.Size, record.HorizontalPrecision, record.VerticalPrecision, record.Altitude, record.LatDegrees, record.LatMinutes, record.LatSeconds, record.LatDirection, record.LongDegrees, record.LongMinutes, record.LongSeconds, record.LongDirection); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
 		}

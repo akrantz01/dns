@@ -1,6 +1,9 @@
 package db
 
-import "net"
+import (
+	"fmt"
+	"net"
+)
 
 type Record interface {
 	Name() string
@@ -37,11 +40,20 @@ type LOC struct {
 	Size                uint8  `json:"size"`
 	HorizontalPrecision uint8  `json:"horizontal-precision"`
 	VerticalPrecision   uint8  `json:"vertical-precision"`
-	Latitude            uint32 `json:"latitude"`
-	Longitude           uint32 `json:"longitude"`
 	Altitude            uint32 `json:"altitude"`
+	LatDegrees			uint8  `json:"lat-degrees"`
+	LatMinutes			uint8  `json:"lat-minutes"`
+	LatSeconds			uint8  `json:"lat-minutes"`
+	LatDirection		string `json:"lat-direction"`
+	LongDegrees			uint8  `json:"long-degrees"`
+	LongMinutes			uint8  `json:"long-minutes"`
+	LongSeconds			uint8  `json:"long-seconds"`
+	LongDirection		string `json:"long-direction"`
 }
 func (l LOC) Name() string { return "LOC" }
+func (l LOC) ToParsable() (string, uint8) {
+	return fmt.Sprintf("%v %v %v %s %v %v %v %s %v %v %v %v", l.LatDegrees, l.LatMinutes, l.LatSeconds, l.LatDirection, l.LongDegrees, l.LongMinutes, l.LongSeconds, l.LongDirection, l.Altitude, l.Size, l.HorizontalPrecision, l.VerticalPrecision), l.Version
+}
 
 // Parts of a SRV record
 type SRV struct {

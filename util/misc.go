@@ -47,3 +47,13 @@ func RecordDoesNotExist(r db.Record) bool {
 	// This is a REALLY big hack, but its the best way I could think of
 	return fmt.Sprintf("%v", r) == "<nil>"
 }
+
+// Check if value in array
+func StringInArray(val string, list []string) bool {
+	for _, el := range list {
+		if el == val {
+			return true
+		}
+	}
+	return false
+}

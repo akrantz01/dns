@@ -105,17 +105,24 @@ func create(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 			return
 		}
 	case "LOC":
-		if err, _ := util.ValidateBody(body, []string{"version", "size", "horizontal-precision", "vertical-precision", "latitude", "longitude", "altitude"}, map[string]map[string]string{
+		if err, _ := util.ValidateBody(body, []string{"version", "size", "horizontal-precision", "vertical-precision", "altitude", "lat-degrees", "lat-minutes", "lat-seconds", "lat-direction", "long-degrees", "long-minutes", "long-seconds", "long-direction"}, map[string]map[string]string{
 			"version": {"type": "uint8", "required": "true"},
 			"size": {"type": "uint8", "required": "true"},
 			"horizontal-precision": {"type": "uint8", "required": "true"},
 			"vertical-precision": {"type": "uint8", "required": "true"},
-			"latitude": {"type": "uint32", "required": "true"},
-			"longitude": {"type": "uint32", "required": "true"},
 			"altitude": {"type": "uint32", "required": "true"},
+			"lat-degrees": {"type": "uint8", "required": "true", "min": "0", "max": "90"},
+			"lat-minutes": {"type": "uint8", "required": "true", "min": "0", "max": "60"},
+			"lat-seconds": {"type": "uint8", "required": "true", "min": "0", "max": "60"},
+			"lat-direction": {"type": "string", "required": "true", "oneOf": "N,S"},
+			"long-degrees": {"type": "uint8", "required": "true", "min": "0", "max": "180"},
+			"long-minutes": {"type": "uint8", "required": "true", "min": "0", "max": "60"},
+			"long-seconds": {"type": "uint8", "required": "true", "min": "0", "max": "60"},
+			"long-direction": {"type": "string", "required": "true", "oneOf": "E,W"},
 		}); err != "" {
 			util.Responses.Error(w, http.StatusBadRequest, err)
-		} else if err := db.Set.LOC(body["name"].(string), uint8(body["version"].(float64)), uint8(body["size"].(float64)), uint8(body["horizontal-precision"].(float64)), uint8(body["vertical-precision"].(float64)), uint32(body["latitude"].(float64)), uint32(body["longitude"].(float64)), uint32(body["altitude"].(float64))); err != nil {
+			return
+		} else if err := db.Set.LOC(body["name"].(string), uint8(body["version"].(float64)), uint8(body["size"].(float64)), uint8(body["horizontal-precision"].(float64)), uint8(body["vertical-precision"].(float64)), uint32(body["altitude"].(float64)), uint8(body["lat-degrees"].(float64)), uint8(body["lat-minutes"].(float64)), uint8(body["lat-seconds"].(float64)), body["lat-direction"].(string), uint8(body["long-degrees"].(float64)), uint8(body["long-minutes"].(float64)), uint8(body["long-seconds"].(float64)), body["long-direction"].(string)); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
 		}
@@ -127,6 +134,7 @@ func create(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 			"target": {"type": "string", "required": "true"},
 		}); err != "" {
 			util.Responses.Error(w, http.StatusBadRequest, err)
+			return
 		} else if err := db.Set.SRV(body["name"].(string), uint16(body["priority"].(float64)), uint16(body["weight"].(float64)), uint16(body["port"].(float64)), body["target"].(string)); err != nil {
 			util.Responses.Error(w, http.StatusInternalServerError, "failed to write record to database: "+err.Error())
 			return
