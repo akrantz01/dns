@@ -58,10 +58,10 @@ export default class extends Component {
     refreshRecords = () => ApiRecords.List("", Authentication.getToken()).then(res => this.setState({items: res.data.map((value, index) => {return {...value, id: index}})})).catch(err => {
         switch (err.response.status) {
             case 401:
-                this.props.addToast("Unable to retrieve records", "Please log in again", "error");
+                this.props.addToast("Unable to retrieve records", "Please log in again", "danger");
                 break;
             case 500:
-                this.props.addToast("Unable to retrieve records", `Internal server error: ${err.response.data.reason}`, "error");
+                this.props.addToast("Unable to retrieve records", `Internal server danger: ${err.response.data.reason}`, "danger");
                 break;
             default:
                 break;
@@ -74,10 +74,10 @@ export default class extends Component {
             .catch(err => {
                 switch (err.response.status) {
                     case 401:
-                        this.props.addToast("Unable to retrieve records", "Please log in again", "error");
+                        this.props.addToast("Unable to retrieve records", "Please log in again", "danger");
                         break;
                     case 500:
-                        this.props.addToast("Unable to retrieve records", `Internal server error: ${err.response.data.reason}`, "error");
+                        this.props.addToast("Unable to retrieve records", `Internal server danger: ${err.response.data.reason}`, "danger");
                         break;
                     default:
                         break;
@@ -112,16 +112,16 @@ export default class extends Component {
             .catch(err => {
                 switch (err.response.status) {
                     case 400:
-                        this.props.addToast("Failed to create record", `Invalid request format: ${err.response.data.reason}`, "error");
+                        this.props.addToast("Failed to create record", `Invalid request format: ${err.response.data.reason}`, "danger");
                         break;
                     case 401:
-                        this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "error");
+                        this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "danger");
                         break;
                     case 403:
-                        this.props.addToast("Authorization failure", `Role ${Authentication.getUser().role} is not allowed to create ${this.state.name}.`, "error");
+                        this.props.addToast("Authorization failure", `Role ${Authentication.getUser().role} is not allowed to create ${this.state.name}.`, "danger");
                         break;
                     case 500:
-                        this.props.addToast("Internal server error", err.response.reason, "error");
+                        this.props.addToast("Internal server danger", err.response.reason, "danger");
                         break;
                     default:
                         break;
@@ -170,21 +170,24 @@ export default class extends Component {
                             .catch(err => {
                                 switch (err.response.status) {
                                     case 400:
-                                        this.props.addToast("Failed to delete record", `Invalid request format: ${err.response.data.reason}`, "error");
+                                        this.props.addToast("Failed to delete record", `Invalid request format: ${err.response.data.reason}`, "danger");
                                         break;
                                     case 401:
-                                        this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "error");
+                                        this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "danger");
                                         break;
                                     case 403:
-                                        this.props.addToast("Authorization failure", `Role ${Authentication.getUser().role} is not allowed to delete ${record.name} of type ${record.type}`, "error");
+                                        this.props.addToast("Authorization failure", `Role ${Authentication.getUser().role} is not allowed to delete ${record.name} of type ${record.type}`, "danger");
                                         break;
                                     case 500:
-                                        this.props.addToast("Internal server error", err.response.reason, "error");
+                                        this.props.addToast("Internal server danger", err.response.reason, "danger");
                                         break;
                                     default:
                                         break;
                                 }
-                            }).finally(() => this.refreshRecords())
+                            }).finally(() => {
+                                this.setState({selectedItems: []});
+                                this.refreshRecords();
+                            })
                     }
                 ]
             }
@@ -206,6 +209,29 @@ export default class extends Component {
                         <EuiPageContentBody>
                             <EuiButton onClick={this.toggleCreateModal.bind(this)} fill color="ghost">Create a New Record</EuiButton>
                             <EuiButton onClick={this.refreshRecords.bind(this)} style={{ marginLeft: "20px" }} color="ghost">Refresh</EuiButton>
+                            { this.state.selectedItems.length !== 0 && <EuiButton color="danger" iconType="trash" onClick={() => {
+                                for (let record of this.state.selectedItems) ApiRecords.Delete(record.name, record.type, Authentication.getToken())
+                                    .catch(err => {
+                                        switch (err.response.status) {
+                                            case 400:
+                                                this.props.addToast("Failed to delete record", `Invalid request format: ${err.response.data.reason}`, "danger");
+                                                break;
+                                            case 401:
+                                                this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "danger");
+                                                break;
+                                            case 403:
+                                                this.props.addToast("Authorization failure", `Role ${Authentication.getUser().role} is not allowed to delete ${record.name} of type ${record.type}`, "danger");
+                                                break;
+                                            case 500:
+                                                this.props.addToast("Internal server danger", err.response.reason, "danger");
+                                                break;
+                                            default:
+                                                break;
+                                        }
+                                    });
+                                this.props.addToast(`Successfully deleted ${this.state.selectedItems.length} record${(this.state.selectedItems === 1) ? "" : "s"}`, "", "success");
+                                this.refreshRecords();
+                            }} fill style={{ marginLeft: "5em" }}>Delete { this.state.selectedItems.length } Record{ this.state.selectedItems.length === 1 ? "" : "s" }</EuiButton>}
                             <EuiSpacer size="xl"/>
                             <EuiBasicTable
                                 items={pageOfItems}
