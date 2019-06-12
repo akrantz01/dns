@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import {
+    Comparators,
     EuiPage,
     EuiPageBody,
     EuiPageContent,
@@ -8,10 +9,25 @@ import {
     EuiPageContentBody,
     EuiTitle,
     EuiBasicTable,
-    Comparators
+    EuiButton,
+    EuiSpacer,
+    EuiOverlayMask,
+    EuiModal,
+    EuiModalHeader,
+    EuiModalHeaderTitle,
+    EuiModalBody,
+    EuiModalFooter,
+    EuiButtonEmpty,
+    EuiForm,
+    EuiFormRow,
+    EuiFieldText,
+    EuiSuperSelect
 } from '@elastic/eui';
 import {ApiRecords} from "../api";
 import Authentication from "../user";
+
+import { options } from './records/select';
+import RecordData from './records/fields';
 
 export default class extends Component {
     constructor(props) {
@@ -23,7 +39,11 @@ export default class extends Component {
             sortField: "name",
             sortDirection: "asc",
             selectedItems: [],
-            items: []
+            items: [],
+            createModalOpen: false,
+            record: "A",
+            name: "",
+            data: {}
         };
     }
 
@@ -34,10 +54,23 @@ export default class extends Component {
         this.setState({pageIndex, pageSize, sortField, sortDirection});
     };
     onSelectionChange = selectedItems => this.setState({selectedItems});
+    toggleCreateModal = () => this.setState({createModalOpen: !this.state.createModalOpen});
+    refreshRecords = () => ApiRecords.List("", Authentication.getToken()).then(res => this.setState({items: res.data.map((value, index) => {return {...value, id: index}})})).catch(err => {
+        switch (err.response.status) {
+            case 401:
+                this.props.addToast("Unable to retrieve records", "Please log in again", "error");
+                break;
+            case 500:
+                this.props.addToast("Unable to retrieve records", `Internal server error: ${err.response.data.reason}`, "error");
+                break;
+            default:
+                break;
+        }
+    });
 
     componentWillMount() {
         ApiRecords.List("", Authentication.getToken())
-            .then(res => this.setState({items: res.data.map((value, index) => {return {...value, id: index}})}))
+            .then(res => this.setState({items: res.data.map((value, index) => {return {...value, id: index * Math.floor(Math.random() * 1000000)}})}))
             .catch(err => {
                 switch (err.response.status) {
                     case 401:
@@ -68,6 +101,10 @@ export default class extends Component {
 
         return {pageOfItems, totalItemCount: items.length}
     };
+
+    onTypeChange = value => this.setState({record: value});
+    onNameChange = e => this.setState({name: e.target.value});
+    onDataChange = data => this.setState({data: data});
 
     render() {
         const columns = [
@@ -122,6 +159,9 @@ export default class extends Component {
                             </EuiPageContentHeaderSection>
                         </EuiPageContentHeader>
                         <EuiPageContentBody>
+                            <EuiButton onClick={this.toggleCreateModal.bind(this)} fill color="ghost">Create a New Record</EuiButton>
+                            <EuiButton onClick={this.refreshRecords.bind(this)} style={{ marginLeft: "20px" }} color="ghost">Refresh</EuiButton>
+                            <EuiSpacer size="xl"/>
                             <EuiBasicTable
                                 items={pageOfItems}
                                 itemId="id"
@@ -132,6 +172,35 @@ export default class extends Component {
                                 hasActions={true}
                                 onChange={this.onTableChange.bind(this)}
                             />
+                            { this.state.createModalOpen && (
+                                <EuiOverlayMask>
+                                    <EuiModal onClose={this.toggleCreateModal.bind(this)} initialFocus="[name=recordtype]">
+                                        <EuiModalHeader>
+                                            <EuiModalHeaderTitle>Create a new record</EuiModalHeaderTitle>
+                                        </EuiModalHeader>
+
+                                        <EuiModalBody>
+                                            <EuiForm>
+                                                <EuiFormRow label="Record type">
+                                                    <EuiSuperSelect name="recordtype" options={options} valueOfSelected={this.state.record} onChange={this.onTypeChange.bind(this)}/>
+                                                </EuiFormRow>
+
+                                                <EuiFormRow label="Name">
+                                                    <EuiFieldText value={this.state.name} onChange={this.onNameChange.bind(this)}/>
+                                                </EuiFormRow>
+
+                                                <RecordData record={this.state.record} updateRecordData={this.onDataChange.bind(this)}/>
+                                            </EuiForm>
+                                        </EuiModalBody>
+
+                                        <EuiModalFooter>
+                                            <EuiButtonEmpty onClick={this.toggleCreateModal.bind(this)} color="ghost">Cancel</EuiButtonEmpty>
+
+                                            <EuiButton onClick={this.toggleCreateModal.bind(this)} fill>Create</EuiButton>
+                                        </EuiModalFooter>
+                                    </EuiModal>
+                                </EuiOverlayMask>
+                            )}
                         </EuiPageContentBody>
                     </EuiPageContent>
                 </EuiPageBody>
