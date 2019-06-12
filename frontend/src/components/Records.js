@@ -106,6 +106,32 @@ export default class extends Component {
     onNameChange = e => this.setState({name: e.target.value});
     onDataChange = data => this.setState({data: data});
 
+    onSave = () => {
+        ApiRecords.Create(this.state.record, this.state.name, this.state.data, Authentication.getToken())
+            .then(() => this.props.addToast("Successfully created new record", `A new ${this.state.record} record was created for ${this.state.name}.`, "success"))
+            .catch(err => {
+                switch (err.response.status) {
+                    case 400:
+                        this.props.addToast("Failed to create record", `Invalid request format: ${err.response.data.reason}`, "error");
+                        break;
+                    case 401:
+                        this.props.addToast("Authentication failure", "Your authentication failed, please log out an log back in", "error");
+                        break;
+                    case 403:
+                        this.props.addToast("Authorization failure", `Role ${Authentication.getUser().role} is not allowed to create ${this.state.name}.`, "error");
+                        break;
+                    case 500:
+                        this.props.addToast("Internal server error", err.response.reason, "error");
+                        break;
+                    default:
+                        break;
+                }
+            }).finally(() => {
+                this.refreshRecords();
+                this.toggleCreateModal();
+            });
+    };
+
     render() {
         const columns = [
             {
@@ -196,7 +222,7 @@ export default class extends Component {
                                         <EuiModalFooter>
                                             <EuiButtonEmpty onClick={this.toggleCreateModal.bind(this)} color="ghost">Cancel</EuiButtonEmpty>
 
-                                            <EuiButton onClick={this.toggleCreateModal.bind(this)} fill>Create</EuiButton>
+                                            <EuiButton onClick={this.onSave.bind(this)} fill>Create</EuiButton>
                                         </EuiModalFooter>
                                     </EuiModal>
                                 </EuiOverlayMask>
