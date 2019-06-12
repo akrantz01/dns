@@ -115,7 +115,7 @@ export default class extends Component {
                         this.props.addToast("Failed to create record", `Invalid request format: ${err.response.data.reason}`, "error");
                         break;
                     case 401:
-                        this.props.addToast("Authentication failure", "Your authentication failed, please log out an log back in", "error");
+                        this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "error");
                         break;
                     case 403:
                         this.props.addToast("Authorization failure", `Role ${Authentication.getUser().role} is not allowed to create ${this.state.name}.`, "error");
@@ -165,7 +165,26 @@ export default class extends Component {
                         icon: "trash",
                         color: "danger",
                         type: "icon",
-                        onClick: () => {}
+                        onClick: (record) => ApiRecords.Delete(record.name, record.type, Authentication.getToken())
+                            .then(() => this.props.addToast("Successfully deleted record", `Record ${record.name} of type ${record.type} was deleted.`, "success"))
+                            .catch(err => {
+                                switch (err.response.status) {
+                                    case 400:
+                                        this.props.addToast("Failed to delete record", `Invalid request format: ${err.response.data.reason}`, "error");
+                                        break;
+                                    case 401:
+                                        this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "error");
+                                        break;
+                                    case 403:
+                                        this.props.addToast("Authorization failure", `Role ${Authentication.getUser().role} is not allowed to delete ${record.name} of type ${record.type}`, "error");
+                                        break;
+                                    case 500:
+                                        this.props.addToast("Internal server error", err.response.reason, "error");
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }).finally(() => this.refreshRecords())
                     }
                 ]
             }
