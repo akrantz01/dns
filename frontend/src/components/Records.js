@@ -25,6 +25,7 @@ import {
 } from '@elastic/eui';
 import {ApiRecords} from "../api";
 import Authentication from "../user";
+import { isMobile } from '../util';
 
 import { options } from './records/select';
 import RecordData from './records/fields';
@@ -180,7 +181,6 @@ export default class extends Component {
                 actions: [
                     {
                         name: "Edit",
-                        isPrimary: true,
                         description: "Modify this record",
                         icon: "pencil",
                         type: "icon",
@@ -205,7 +205,6 @@ export default class extends Component {
                     },
                     {
                         name: "Delete",
-                        isPrimary: true,
                         description: "Delete this record",
                         icon: "trash",
                         color: "danger",
@@ -253,8 +252,9 @@ export default class extends Component {
                         </EuiPageContentHeader>
                         <EuiPageContentBody>
                             <EuiButton onClick={this.toggleCreateModal.bind(this)} fill color="ghost">Create a New Record</EuiButton>
-                            <EuiButton onClick={this.refreshRecords.bind(this)} style={{ marginLeft: "20px" }} color="ghost">Refresh</EuiButton>
-                            { this.state.selectedItems.length !== 0 && <EuiButton color="danger" iconType="trash" onClick={() => {
+                            <EuiButton onClick={this.refreshRecords.bind(this)} style={{ marginLeft: 20, marginTop: (isMobile()) ? 20 : 0 }} color="ghost">Refresh</EuiButton>
+                            <EuiSpacer/>
+                            <EuiButton color="danger" iconType="trash" disabled={this.state.selectedItems.length === 0} onClick={() => {
                                 for (let record of this.state.selectedItems) ApiRecords.Delete(record.name, record.type, Authentication.getToken())
                                     .catch(err => {
                                         switch (err.response.status) {
@@ -276,7 +276,7 @@ export default class extends Component {
                                     });
                                 this.props.addToast(`Successfully deleted ${this.state.selectedItems.length} record${(this.state.selectedItems === 1) ? "" : "s"}`, "", "success");
                                 this.refreshRecords();
-                            }} fill style={{ marginLeft: "5em" }}>Delete { this.state.selectedItems.length } Record{ this.state.selectedItems.length === 1 ? "" : "s" }</EuiButton>}
+                            }} fill >Delete { this.state.selectedItems.length } Record{ this.state.selectedItems.length === 1 ? "" : "s" }</EuiButton>
                             <EuiSpacer size="xl"/>
                             <EuiBasicTable
                                 items={pageOfItems}

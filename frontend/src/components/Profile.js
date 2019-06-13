@@ -18,6 +18,7 @@ import {
 } from '@elastic/eui';
 import {ApiUsers} from "../api";
 import Authentication from "../user";
+import {isMobile} from "../util";
 
 export default class extends Component {
     constructor(props) {
@@ -115,12 +116,12 @@ export default class extends Component {
                                 <EuiFlexGroup style={{ maxWidth: 400 }}>
                                     <EuiFlexItem grow={false}>
                                         <EuiFormRow label="Number of Logins:">
-                                            <EuiFieldNumber value={this.state.logins} readOnly style={{ width: 202 }}/>
+                                            <EuiFieldNumber value={this.state.logins} readOnly style={{ width: (isMobile()) ? "100%" : 202 }}/>
                                         </EuiFormRow>
                                     </EuiFlexItem>
                                     <EuiFlexItem grow={false}>
                                         <EuiFormRow label="Name:">
-                                            <EuiFieldText name="name" value={this.state.name} onChange={this.onNameChange.bind(this)} style={{ width: 202 }}/>
+                                            <EuiFieldText name="name" value={this.state.name} onChange={this.onNameChange.bind(this)} style={{ width: (isMobile()) ? "100%" : 202 }}/>
                                         </EuiFormRow>
                                     </EuiFlexItem>
                                 </EuiFlexGroup>
