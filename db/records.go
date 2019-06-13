@@ -11,13 +11,13 @@ type Record interface {
 
 // Parts of an A record
 type A struct {
-	Address net.IP `json:"address"`
+	Address net.IP `json:"host"`
 }
 func (a A) Name() string { return "A" }
 
 // Parts of an AAAA record
 type AAAA struct {
-	Address net.IP `json:"address"`
+	Address net.IP `json:"host"`
 }
 func (a AAAA) Name() string { return "AAAA" }
 
@@ -98,7 +98,7 @@ func (p PTR) Name() string { return "PTR" }
 
 // Parts of a CERT record
 type CERT struct {
-	Type        uint16 `json:"type"`
+	Type        uint16 `json:"c-type"`
 	KeyTag      uint16 `json:"key-tag"`
 	Algorithm   uint8  `json:"algorithm"`
 	Certificate string `json:"certificate"`
@@ -146,7 +146,7 @@ func (s SMIMEA) Name() string { return "SMIMEA" }
 // Parts of a SSHFP record
 type SSHFP struct {
 	Algorithm   uint8  `json:"algorithm"`
-	Type        uint8  `json:"type"`
+	Type        uint8  `json:"s-type"`
 	Fingerprint string `json:"fingerprint"`
 }
 func (s SSHFP) Name() string { return "SSHFP" }
