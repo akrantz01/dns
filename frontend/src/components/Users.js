@@ -10,7 +10,17 @@ import {
     EuiTitle,
     EuiBasicTable,
     EuiButton,
-    EuiSpacer
+    EuiButtonEmpty,
+    EuiSpacer,
+    EuiOverlayMask,
+    EuiModal,
+    EuiModalHeader,
+    EuiModalHeaderTitle,
+    EuiModalBody,
+    EuiModalFooter,
+    EuiForm,
+    EuiFormRow,
+    EuiFieldText
 } from '@elastic/eui';
 
 import { isMobile } from "../util";
@@ -27,9 +37,24 @@ export default class extends Component {
             sortField: "username",
             sortDirection: "asc",
             selectedItems: [],
-            items: []
+            items: [],
+            data: {
+                name: "",
+                username: "",
+                password: "",
+                role: "",
+                logins: 0
+            },
+            createModalOpen: false
         }
     }
+
+    onNameChange = (e) => this.setState({data: {...this.state.data, name: e.target.value}});
+    onUsernameChange = (e) => this.setState({data: {...this.state.data, username: e.target.value}});
+    onPasswordChange = (e) => this.setState({data: {...this.state.data, password: e.target.value}});
+    onRoleChange = (e) => this.setState({data: {...this.state.data, role: e.target.value}});
+
+    toggleCreateModal = () => this.setState({createModalOpen: !this.state.createModalOpen});
 
     onTableChange = ({ page = {}, sort = {} }) => {
         const { index: pageIndex, size: pageSize } = page;
@@ -54,7 +79,7 @@ export default class extends Component {
 
         return {pageOfItems, totalItemCount: items.length};
     };
-    refreshRecords = () => ApiUsers.Read(Authentication.getToken(), "*").then(res => this.setState({items : res.data.map((value, index) => {return {...value, id: index}})})).catch(err => {
+    refreshUsers = () => ApiUsers.Read(Authentication.getToken(), "*").then(res => this.setState({items : res.data.map((value, index) => {return {...value, id: index}})})).catch(err => {
         switch (err.response.status) {
             case 401:
                 this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "danger");
@@ -83,6 +108,32 @@ export default class extends Component {
                 }
             });
     }
+
+    onCreateSave = () => {
+        ApiUsers.Create(this.state.data.name, this.state.data.username, this.state.data.password, this.state.data.role, Authentication.getToken())
+            .then(() => this.props.addToast("Successfully created user", `User ${this.state.data.name} (${this.state.data.username}) was created as a part of the ${this.state.data.role} role`, "success"))
+            .catch(err => {
+                switch (err.response.status) {
+                    case 400:
+                        this.props.addToast("Failed to create user", `Invalid request format: ${err.response.data.reason}`, "danger");
+                        break;
+                    case 401:
+                        this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "danger");
+                        break;
+                    case 403:
+                        this.props.addToast("Authorization failure", "You must be part of role 'admin' to create users", "danger");
+                        break;
+                    case 500:
+                        this.props.addToast("Internal server error", err.response.data.reason, "danger");
+                        break;
+                    default:
+                        break;
+                }
+            }).finally(() => {
+                this.refreshUsers();
+                this.toggleCreateModal();
+        })
+    };
 
     render() {
         const columns = [
@@ -146,8 +197,8 @@ export default class extends Component {
                             </EuiPageContentHeaderSection>
                         </EuiPageContentHeader>
                         <EuiPageContentBody>
-                            <EuiButton onClick={() => {}} fill color="ghost">Create a New User</EuiButton>
-                            <EuiButton onClick={this.refreshRecords.bind(this)} style={{ marginLeft: 20, marginTop: (isMobile()) ? 20 : 0 }} color="ghost">Refresh</EuiButton>
+                            <EuiButton onClick={this.toggleCreateModal.bind(this)} fill color="ghost">Create a New User</EuiButton>
+                            <EuiButton onClick={this.refreshUsers.bind(this)} style={{ marginLeft: 20, marginTop: (isMobile()) ? 20 : 0 }} color="ghost">Refresh</EuiButton>
                             <EuiSpacer/>
                             <EuiButton color="danger" iconType="trash" disabled={this.state.selectedItems.length === 0} onClick={() => {}} fill>Delete { this.state.selectedItems.length } Record{ this.state.selectedItems.length === 1 ? "" : "s" }</EuiButton>
                             <EuiSpacer size="xl"/>
@@ -161,6 +212,41 @@ export default class extends Component {
                                 hasActions={true}
                                 onChange={this.onTableChange.bind(this)}
                             />
+                            { this.state.createModalOpen && (
+                                <EuiOverlayMask>
+                                    <EuiModal onClose={this.toggleCreateModal.bind(this)}>
+                                        <EuiModalHeader>
+                                            <EuiModalHeaderTitle>Create a new user</EuiModalHeaderTitle>
+                                        </EuiModalHeader>
+
+                                        <EuiModalBody>
+                                            <EuiForm>
+                                                <EuiFormRow label="Name">
+                                                    <EuiFieldText value={this.state.data.name} onChange={this.onNameChange.bind(this)}/>
+                                                </EuiFormRow>
+
+                                                <EuiFormRow label="Username">
+                                                    <EuiFieldText value={this.state.data.username} onChange={this.onUsernameChange.bind(this)}/>
+                                                </EuiFormRow>
+
+                                                <EuiFormRow label="Password">
+                                                    <EuiFieldText value={this.state.data.password} onChange={this.onPasswordChange.bind(this)} type="password"/>
+                                                </EuiFormRow>
+
+                                                <EuiFormRow label="Role">
+                                                    <EuiFieldText value={this.state.data.role} onChange={this.onRoleChange.bind(this)}/>
+                                                </EuiFormRow>
+                                            </EuiForm>
+                                        </EuiModalBody>
+
+                                        <EuiModalFooter>
+                                            <EuiButtonEmpty onClick={this.toggleCreateModal.bind(this)} color="ghost">Cancel</EuiButtonEmpty>
+
+                                            <EuiButton onClick={this.onCreateSave.bind(this)} fill>Create</EuiButton>
+                                        </EuiModalFooter>
+                                    </EuiModal>
+                                </EuiOverlayMask>
+                            )}
                         </EuiPageContentBody>
                     </EuiPageContent>
                 </EuiPageBody>
