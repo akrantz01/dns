@@ -33,15 +33,15 @@ func update(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 	}
 
 	// Get user from database
-	u, err := db.UserFromToken(token, database)
+	tokenUser, err := db.UserFromToken(token, database)
 	if err != nil {
 		util.Responses.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// Operate differently if admin
-	username := u.Username
-	if u.Role == "admin" && r.URL.Query().Get("user") != "" {
+	username := tokenUser.Username
+	if tokenUser.Role == "admin" && r.URL.Query().Get("user") != "" {
 		// Allow operating on different user if admin
 		username = r.URL.Query().Get("user")
 	}
@@ -63,7 +63,7 @@ func update(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 	}
 
 	// Get user from database
-	u, err = db.UserFromDatabase(username, database)
+	u, err := db.UserFromDatabase(username, database)
 	if err != nil {
 		util.Responses.Error(w, http.StatusBadRequest, err.Error())
 		return
@@ -81,7 +81,7 @@ func update(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 		}
 		u.Password = hash
 	}
-	if valid["role"] {
+	if valid["role"] && tokenUser.Role == "admin" {
 		u.Role = body["role"].(string)
 	}
 
