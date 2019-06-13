@@ -38,23 +38,28 @@ export default class extends Component {
             sortDirection: "asc",
             selectedItems: [],
             items: [],
-            data: {
+            create: {
                 name: "",
                 username: "",
                 password: "",
                 role: "",
                 logins: 0
             },
-            createModalOpen: false
+            edit: {
+                name: "",
+                role: "",
+                password: ""
+            },
+            createModalOpen: false,
+            editModalOpen: false
         }
     }
 
-    onNameChange = (e) => this.setState({data: {...this.state.data, name: e.target.value}});
-    onUsernameChange = (e) => this.setState({data: {...this.state.data, username: e.target.value}});
-    onPasswordChange = (e) => this.setState({data: {...this.state.data, password: e.target.value}});
-    onRoleChange = (e) => this.setState({data: {...this.state.data, role: e.target.value}});
+    onCreateInputChange = field => e => this.setState({create: {...this.state.create, [field]: e.target.value}});
+    onEditInputChange = field => e => this.setState({edit: {...this.state.edit, [field]: e.target.value}});
 
     toggleCreateModal = () => this.setState({createModalOpen: !this.state.createModalOpen});
+    toggleEditModal = () => this.setState({editModalOpen: !this.state.editModalOpen});
 
     onTableChange = ({ page = {}, sort = {} }) => {
         const { index: pageIndex, size: pageSize } = page;
@@ -110,8 +115,8 @@ export default class extends Component {
     }
 
     onCreateSave = () => {
-        ApiUsers.Create(this.state.data.name, this.state.data.username, this.state.data.password, this.state.data.role, Authentication.getToken())
-            .then(() => this.props.addToast("Successfully created user", `User ${this.state.data.username} (${this.state.data.name}) was created as a part of the ${this.state.data.role} role`, "success"))
+        ApiUsers.Create(this.state.create.name, this.state.create.username, this.state.create.password, this.state.create.role, Authentication.getToken())
+            .then(() => this.props.addToast("Successfully created user", `User ${this.state.create.username} (${this.state.create.name}) was created as a part of the ${this.state.create.role} role`, "success"))
             .catch(err => {
                 switch (err.response.status) {
                     case 400:
@@ -133,6 +138,29 @@ export default class extends Component {
                 this.setState({selectedItems: [], data: {name: "", username: "", password: "", role: "", logins: 0}});
                 this.refreshUsers();
                 this.toggleCreateModal();
+        })
+    };
+
+    onEditSave = () => {
+        ApiUsers.Update(this.state.edit.name, this.state.edit.password, this.state.edit.role, Authentication.getToken(), this.state.edit.username)
+            .then(() => this.props.addToast("Successfully modified user information", `User ${this.state.edit.username} (${this.state.edit.name}) was modified`, "success"))
+            .catch(err => {
+                switch (err.response.status) {
+                    case 400:
+                        this.props.addToast("Failed to update user", `Invalid request format: ${err.response.data.reason}`, "danger");
+                        break;
+                    case 401:
+                        this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "danger");
+                        break;
+                    case 500:
+                        this.props.addToast("Internal service error", err.response.data.reason, "danger");
+                        break;
+                    default:
+                        break;
+                }
+            }).finally(() => {
+                setTimeout(() => this.refreshUsers(), 250);
+                this.toggleEditModal();
         })
     };
 
@@ -170,7 +198,24 @@ export default class extends Component {
                         description: "Modify this user",
                         icon: "pencil",
                         type: "icon",
-                        onClick: () => {}
+                        onClick: record => ApiUsers.Read(Authentication.getToken(), record.username).then(res => {
+                            this.setState({edit: {name: res.data.name, username: res.data.username, role: res.data.role, password: ""}});
+                            this.toggleEditModal();
+                        }).catch(err => {
+                            switch (err.response.status) {
+                                case 400:
+                                    this.props.addToast("Failed to read user data", `Invalid request format: ${err.response.data.reason}`, "danger");
+                                    break;
+                                case 401:
+                                    this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "danger");
+                                    break;
+                                case 500:
+                                    this.props.addToast("Internal server error", err.response.data.reason, "danger");
+                                    break;
+                                default:
+                                    break;
+                            }
+                        })
                     },
                     {
                         name: "Delete",
@@ -257,19 +302,19 @@ export default class extends Component {
                                         <EuiModalBody>
                                             <EuiForm>
                                                 <EuiFormRow label="Name">
-                                                    <EuiFieldText value={this.state.data.name} onChange={this.onNameChange.bind(this)}/>
+                                                    <EuiFieldText value={this.state.create.name} onChange={this.onCreateInputChange("name")}/>
                                                 </EuiFormRow>
 
                                                 <EuiFormRow label="Username">
-                                                    <EuiFieldText value={this.state.data.username} onChange={this.onUsernameChange.bind(this)}/>
+                                                    <EuiFieldText value={this.state.create.username} onChange={this.onCreateInputChange("username")}/>
                                                 </EuiFormRow>
 
                                                 <EuiFormRow label="Password">
-                                                    <EuiFieldText value={this.state.data.password} onChange={this.onPasswordChange.bind(this)} type="password"/>
+                                                    <EuiFieldText value={this.state.create.password} onChange={this.onCreateInputChange("password")} type="password"/>
                                                 </EuiFormRow>
 
                                                 <EuiFormRow label="Role">
-                                                    <EuiFieldText value={this.state.data.role} onChange={this.onRoleChange.bind(this)}/>
+                                                    <EuiFieldText value={this.state.create.role} onChange={this.onCreateInputChange("role")}/>
                                                 </EuiFormRow>
                                             </EuiForm>
                                         </EuiModalBody>
@@ -278,6 +323,37 @@ export default class extends Component {
                                             <EuiButtonEmpty onClick={this.toggleCreateModal.bind(this)} color="ghost">Cancel</EuiButtonEmpty>
 
                                             <EuiButton onClick={this.onCreateSave.bind(this)} fill>Create</EuiButton>
+                                        </EuiModalFooter>
+                                    </EuiModal>
+                                </EuiOverlayMask>
+                            )}
+                            { this.state.editModalOpen && (
+                                <EuiOverlayMask>
+                                    <EuiModal onClose={this.toggleEditModal.bind(this)}>
+                                        <EuiModalHeader>
+                                            <EuiModalHeaderTitle>Edit {this.state.edit.username} ({this.state.edit.name})</EuiModalHeaderTitle>
+                                        </EuiModalHeader>
+
+                                        <EuiModalBody>
+                                            <EuiForm>
+                                                <EuiFormRow label="Name">
+                                                    <EuiFieldText value={this.state.edit.name} onChange={this.onEditInputChange("name")}/>
+                                                </EuiFormRow>
+
+                                                <EuiFormRow label="Password">
+                                                    <EuiFieldText value={this.state.edit.password} onChange={this.onEditInputChange("password")} type="password"/>
+                                                </EuiFormRow>
+
+                                                <EuiFormRow label="Role">
+                                                    <EuiFieldText value={this.state.edit.role} onChange={this.onEditInputChange("role")}/>
+                                                </EuiFormRow>
+                                            </EuiForm>
+                                        </EuiModalBody>
+
+                                        <EuiModalFooter>
+                                            <EuiButtonEmpty onClick={this.toggleEditModal.bind(this)} color="ghost">Cancel</EuiButtonEmpty>
+
+                                            <EuiButton onClick={this.onEditSave.bind(this)} fill>Save</EuiButton>
                                         </EuiModalFooter>
                                     </EuiModal>
                                 </EuiOverlayMask>
