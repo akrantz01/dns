@@ -17,102 +17,102 @@ export default class extends Component {
 
         this.state = {
             a: {
-                host: ""
+                host: props.initial.host || ""
             },
             aaaa: {
-                host: ""
+                host: props.initial.host || ""
             },
             cname: {
-                target: ""
+                target: props.initial.host || ""
             },
             mx: {
-                host: "",
-                priority: 1
+                host: props.initial.host || "",
+                priority: props.initial.priority || 1
             },
             loc: {
-                version: 1,
-                size: 0,
-                "horizontal-precision": 0,
-                "vertical-precision": 0,
-                altitude: 0,
-                "lat-degrees": 0,
-                "lat-minutes": 0,
-                "lat-seconds": 0,
-                "lat-direction": "N",
-                "long-degrees": 0,
-                "long-minutes": 0,
-                "long-seconds": 0,
-                "long-direction": "E"
+                version: props.initial.version || 1,
+                size: props.initial.size || 0,
+                "horizontal-precision": props.initial["horizontal-precision"] || 0,
+                "vertical-precision": props.initial["vertical-precision"] || 0,
+                altitude: props.initial.altitude || 0,
+                "lat-degrees": props.initial["lat-degrees"] || 0,
+                "lat-minutes": props.initial["lat-minutes"] || 0,
+                "lat-seconds": props.initial["lat-seconds"] || 0,
+                "lat-direction": props.initial["lat-direction"] || "N",
+                "long-degrees": props.initial["long-degrees"] || 0,
+                "long-minutes": props.initial["long-minutes"] || 0,
+                "long-seconds": props.initial["long-seconds"] || 0,
+                "long-direction": props.initial["long-direction"] || "E"
             },
             srv: {
-                priority: 1,
-                weight: 1,
-                port: 1,
-                target: ""
+                priority: props.initial.priority || 1,
+                weight: props.initial.weight || 1,
+                port: props.initial.port || 1,
+                target: props.initial.target || ""
             },
             spf: {
-                text: ""
+                text: props.initial.text || ""
             },
             txt: {
-                text: ""
+                text: props.initial.text || ""
             },
             ns: {
-                nameserver: ""
+                nameserver: props.initial.nameserver || ""
             },
             caa: {
-                tag: "issue",
-                content: ""
+                tag: props.initial.tag || "issue",
+                content: props.initial.content || ""
             },
             ptr: {
-                domain: ""
+                domain: props.initial.domain || ""
             },
             cert: {
-                "c-type": 0,
-                "key-tag": 0,
-                algorithm: 0,
-                certificate: ""
+                "c-type": props.initial["c-type"] || 0,
+                "key-tag": props.initial["key-tag"] || 0,
+                algorithm: props.initial.algorithm || 0,
+                certificate: props.initial.certificate || ""
             },
             dnskey: {
-                flags: 0,
-                protocol: 3,
-                algorithm: 0,
-                "public-key": ""
+                flags: props.initial.flags || 0,
+                protocol: props.initial.protocol || 3,
+                algorithm: props.initial.algorithm || 0,
+                "public-key": props.initial["public-key"] || ""
             },
             ds: {
-                "key-tag": 0,
-                algorithm: 0,
-                "digest-type": 1,
-                digest: ""
+                "key-tag": props.initial["key-tag"] || 0,
+                algorithm: props.initial.algorithm || 0,
+                "digest-type": props.initial["digest-type"] || 1,
+                digest: props.initial.digest || ""
             },
             naptr: {
-                order: 0,
-                preference: 0,
-                flags: "",
-                service: "",
-                regexp: "",
-                replacement: ""
+                order: props.initial.order || 0,
+                preference: props.initial.preference || 0,
+                flags: props.initial.flags || "",
+                service: props.initial.service || "",
+                regexp: props.initial.regexp || "",
+                replacement: props.initial.replacement || ""
             },
             smimea: {
-                usage: 0,
-                selector: 0,
-                "matching-type": 0,
-                certificate: ""
+                usage: props.initial.usage || 0,
+                selector: props.initial.selector || 0,
+                "matching-type": props.initial["matching-type"] || 0,
+                certificate: props.initial.certificate || ""
             },
             sshfp: {
-                algorithm: 0,
-                "s-type": 1,
-                fingerprint: ""
+                algorithm: props.initial.algorithm || 0,
+                "s-type": props.initial["s-type"] || 1,
+                fingerprint: props.initial.fingerprint || ""
             },
             tlsa: {
-                usage: 0,
-                selector: 0,
-                "matching-type": 0,
-                certificate: ""
+                usage: props.initial.usage || 0,
+                selector: props.initial.selector || 0,
+                "matching-type": props.initial["matching-type"] || 0,
+                certificate: props.initial.certificate || ""
             },
             uri: {
-                priority: 1,
-                weight: 0,
-                target: ""
+                priority: props.initial.priority || 1,
+                weight: props.initial.weight || 0,
+                target: props.initial.target || ""
             }
         };
     }

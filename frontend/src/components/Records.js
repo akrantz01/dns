@@ -41,9 +41,11 @@ export default class extends Component {
             selectedItems: [],
             items: [],
             createModalOpen: false,
+            editModalOpen: false,
             record: "A",
             name: "",
-            data: {}
+            data: {},
+            editInitial: {}
         };
     }
 
@@ -55,6 +57,7 @@ export default class extends Component {
     };
     onSelectionChange = selectedItems => this.setState({selectedItems});
     toggleCreateModal = () => this.setState({createModalOpen: !this.state.createModalOpen});
+    toggleEditModal = () => this.setState({editModalOpen: !this.state.editModalOpen});
     refreshRecords = () => ApiRecords.List("", Authentication.getToken()).then(res => this.setState({items: res.data.map((value, index) => {return {...value, id: index}})})).catch(err => {
         switch (err.response.status) {
             case 401:
@@ -106,7 +109,7 @@ export default class extends Component {
     onNameChange = e => this.setState({name: e.target.value});
     onDataChange = data => this.setState({data: data});
 
-    onSave = () => {
+    onCreateSave = () => {
         ApiRecords.Create(this.state.record, this.state.name, this.state.data, Authentication.getToken())
             .then(() => this.props.addToast("Successfully created new record", `A new ${this.state.record} record was created for ${this.state.name}.`, "success"))
             .catch(err => {
@@ -130,6 +133,31 @@ export default class extends Component {
                 this.refreshRecords();
                 this.toggleCreateModal();
             });
+    };
+    onEditSave = () => {
+        ApiRecords.Update(this.state.name, this.state.record, this.state.data, Authentication.getToken())
+            .then(() => this.props.addToast("Successfully modified record", `Record ${this.state.name} in ${this.state.record} had data changed`, "success"))
+            .catch(err => {
+                switch (err.response.status) {
+                    case 400:
+                        this.props.addToast("Failed to update record", `Invalid request format: ${err.response.data.reason}`, "danger");
+                        break;
+                    case 401:
+                        this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "danger");
+                        break;
+                    case 403:
+                        this.props.addToast("Authorization failure", `Role ${Authentication.getUser().role} is not allowed to modify ${this.state.name}.`, "danger");
+                        break;
+                    case 500:
+                        this.props.addToast("Internal server danger", err.response.data.reason, "danger");
+                        break;
+                    default:
+                        break;
+                }
+            }).finally(() => {
+                this.refreshRecords();
+                this.toggleEditModal();
+        })
     };
 
     render() {
@@ -156,7 +184,24 @@ export default class extends Component {
                         description: "Modify this record",
                         icon: "pencil",
                         type: "icon",
-                        onClick: () => {}
+                        onClick: (record) => ApiRecords.Read(record.name, record.type, Authentication.getToken()).then(res => {
+                            this.setState({name: record.name, record: record.type, editInitial: res.data});
+                            this.toggleEditModal();
+                        }).catch(err => {
+                            switch (err.response.status) {
+                                case 400:
+                                    this.props.addToast("Failed to read record data", `Invalid request format: ${err.response.data.reason}`, "danger");
+                                    break;
+                                case 401:
+                                    this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "danger");
+                                    break;
+                                case 500:
+                                    this.props.addToast("Internal server error", err.response.data.reason, "danger");
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }),
                     },
                     {
                         name: "Delete",
@@ -260,14 +305,35 @@ export default class extends Component {
                                                     <EuiFieldText value={this.state.name} onChange={this.onNameChange.bind(this)}/>
                                                 </EuiFormRow>
 
-                                                <RecordData record={this.state.record} updateRecordData={this.onDataChange.bind(this)}/>
+                                                <RecordData record={this.state.record} updateRecordData={this.onDataChange.bind(this)} initial={{}}/>
                                             </EuiForm>
                                         </EuiModalBody>
 
                                         <EuiModalFooter>
                                             <EuiButtonEmpty onClick={this.toggleCreateModal.bind(this)} color="ghost">Cancel</EuiButtonEmpty>
 
-                                            <EuiButton onClick={this.onSave.bind(this)} fill>Create</EuiButton>
+                                            <EuiButton onClick={this.onCreateSave.bind(this)} fill>Create</EuiButton>
+                                        </EuiModalFooter>
+                                    </EuiModal>
+                                </EuiOverlayMask>
+                            )}
+                            { this.state.editModalOpen && (
+                                <EuiOverlayMask>
+                                    <EuiModal onClose={this.toggleEditModal.bind(this)}>
+                                        <EuiModalHeader>
+                                            <EuiModalHeaderTitle>Edit {this.state.name} in {this.state.record}</EuiModalHeaderTitle>
+                                        </EuiModalHeader>
+
+                                        <EuiModalBody>
+                                            <EuiForm>
+                                                <RecordData record={this.state.record} updateRecordData={this.onDataChange.bind(this)} initial={this.state.editInitial}/>
+                                            </EuiForm>
+                                        </EuiModalBody>
+
+                                        <EuiModalFooter>
+                                            <EuiButtonEmpty onClick={this.toggleEditModal.bind(this)} color="ghost">Cancel</EuiButtonEmpty>
+
+                                            <EuiButton onClick={this.onEditSave.bind(this)} fill>Save</EuiButton>
                                         </EuiModalFooter>
                                     </EuiModal>
                                 </EuiOverlayMask>
