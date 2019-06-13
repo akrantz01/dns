@@ -1,6 +1,7 @@
 package users
 
 import (
+	"encoding/json"
 	"github.com/akrantz01/krantz.dev/dns/db"
 	"github.com/akrantz01/krantz.dev/dns/util"
 	bolt "go.etcd.io/bbolt"
@@ -40,11 +41,25 @@ func read(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 
 	// Get list of all users if admin
 	if username == "*" && u.Role == "admin" {
-		var users []string
+		var users []map[string]interface{}
 
 		if err := database.View(func(tx *bolt.Tx) error {
 			return tx.Bucket([]byte("users")).ForEach(func(k, v []byte) error {
-				users = append(users, string(k))
+				// Decode user JSON
+				var u db.User
+				if err := json.Unmarshal(v, &u); err != nil {
+					return err
+				}
+
+				// Remove password hash from user data
+				userData := map[string]interface{}{}
+				userData["name"] = u.Name
+				userData["username"] = u.Username
+				userData["role"] = u.Role
+				userData["logins"] = u.Tokens
+
+				users = append(users, userData)
+
 				return nil
 			})
 		}); err != nil {
