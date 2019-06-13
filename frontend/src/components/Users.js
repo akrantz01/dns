@@ -111,7 +111,7 @@ export default class extends Component {
 
     onCreateSave = () => {
         ApiUsers.Create(this.state.data.name, this.state.data.username, this.state.data.password, this.state.data.role, Authentication.getToken())
-            .then(() => this.props.addToast("Successfully created user", `User ${this.state.data.name} (${this.state.data.username}) was created as a part of the ${this.state.data.role} role`, "success"))
+            .then(() => this.props.addToast("Successfully created user", `User ${this.state.data.username} (${this.state.data.name}) was created as a part of the ${this.state.data.role} role`, "success"))
             .catch(err => {
                 switch (err.response.status) {
                     case 400:
@@ -130,6 +130,7 @@ export default class extends Component {
                         break;
                 }
             }).finally(() => {
+                this.setState({selectedItems: [], data: {name: "", username: "", password: "", role: "", logins: 0}});
                 this.refreshUsers();
                 this.toggleCreateModal();
         })
@@ -177,8 +178,25 @@ export default class extends Component {
                         icon: "trash",
                         type: "icon",
                         color: "danger",
-                        onClick: () => {}
+                        onClick: (record) => ApiUsers.Delete(Authentication.getToken(), record.username)
+                            .then(() => this.props.addToast("Successfully created user", `User ${record.username} (${record.name}) was deleted`))
+                            .catch(err => {
+                                switch (err.response.status) {
+                                    case 401:
+                                        this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "danger");
+                                        break;
+                                    case 500:
+                                        this.props.addToast("Internal server error", err.response.data.reason, "danger");
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }).finally(() => {
+                                this.setState({selectedItems: []});
+                                this.refreshUsers();
+                            })
                     }
+
                 ]
             }
         ];
@@ -200,7 +218,24 @@ export default class extends Component {
                             <EuiButton onClick={this.toggleCreateModal.bind(this)} fill color="ghost">Create a New User</EuiButton>
                             <EuiButton onClick={this.refreshUsers.bind(this)} style={{ marginLeft: 20, marginTop: (isMobile()) ? 20 : 0 }} color="ghost">Refresh</EuiButton>
                             <EuiSpacer/>
-                            <EuiButton color="danger" iconType="trash" disabled={this.state.selectedItems.length === 0} onClick={() => {}} fill>Delete { this.state.selectedItems.length } Record{ this.state.selectedItems.length === 1 ? "" : "s" }</EuiButton>
+                            <EuiButton color="danger" iconType="trash" disabled={this.state.selectedItems.length === 0} onClick={() => {
+                                for (let record of this.state.selectedItems) ApiUsers.Delete(Authentication.getToken(), record.username)
+                                    .catch(err => {
+                                        switch (err.response.status) {
+                                            case 401:
+                                                this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "danger");
+                                                break;
+                                            case 500:
+                                                this.props.addToast("Internal server error", err.response.data.reason, "danger");
+                                                break;
+                                            default:
+                                                break;
+                                        }
+                                    });
+                                this.props.addToast(`Successfully deleted ${this.state.selectedItems.length} record${(this.state.selectedItems.length === 1) ? "" : "s"}`, "", "success");
+                                this.setState({selectedItems: []});
+                                setTimeout(() => this.refreshUsers(), 250);
+                            }} fill>Delete { this.state.selectedItems.length } Record{ this.state.selectedItems.length === 1 ? "" : "s" }</EuiButton>
                             <EuiSpacer size="xl"/>
                             <EuiBasicTable
                                 items={pageOfItems}
