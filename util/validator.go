@@ -48,6 +48,8 @@ func ValidateBody(body map[string]interface{}, keys []string, options map[string
 				return "field '" + key + "' must be a string", valid
 			} else if body[key].(string) == "" && options[key]["required"] == "true" {
 				return "field '" + key + "' must be of length longer than 0", valid
+			} else if body[key].(string) == "" && options[key]["required"] == "false" {
+				continue
 			} else if valuesString, ok := options[key]["oneOf"]; ok {
 				values := strings.Split(valuesString, ",")
 				if !StringInArray(body[key].(string), values) {
