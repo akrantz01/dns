@@ -129,12 +129,12 @@ export default class extends Component {
                                 <EuiFlexGroup stlye={{ maxWidth: 400 }}>
                                     <EuiFlexItem grow={false}>
                                         <EuiFormRow label="Password:" isInvalid={this.state.password !== this.state.passwordConf} error={["Passwords must match"]}>
-                                            <EuiFieldText value={this.state.password} onChange={this.onPasswordChange.bind(this)}/>
+                                            <EuiFieldText value={this.state.password} onChange={this.onPasswordChange.bind(this)} type="password"/>
                                         </EuiFormRow>
                                     </EuiFlexItem>
                                     <EuiFlexItem grow={false}>
                                         <EuiFormRow label="Confirm Password:" isInvalid={this.state.password !== this.state.passwordConf} error={["Passwords must match"]}>
-                                            <EuiFieldText value={this.state.passwordConf} onChange={this.onPasswordConfChange.bind(this)}/>
+                                            <EuiFieldText value={this.state.passwordConf} onChange={this.onPasswordConfChange.bind(this)} type="password"/>
                                         </EuiFormRow>
                                     </EuiFlexItem>
                                 </EuiFlexGroup>
