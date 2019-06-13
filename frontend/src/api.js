@@ -44,7 +44,7 @@ export class ApiUsers {
     static Read = (token, username="") => new Promise((resolve, reject) => {
         axios({
             method: "GET",
-            url: `${API_URL}/users${ (username !== "") ? "?username="+username : "" }`,
+            url: `${API_URL}/users${ (username !== "") ? "?user="+username : "" }`,
             headers: {"Authorization": token}
         }).then(res => resolve(res.data)).catch(err => reject(err));
     });
@@ -52,7 +52,7 @@ export class ApiUsers {
     static Update = (name, password, role, token, username="") => new Promise((resolve, reject) => {
         axios({
             method: "PUT",
-            url: `${API_URL}/users${ (username !== "") ? "?username="+username : "" }`,
+            url: `${API_URL}/users${ (username !== "") ? "?user="+username : "" }`,
             headers: {
                 "Authorization": token,
                 "Content-Type": "application/json"
@@ -68,7 +68,7 @@ export class ApiUsers {
     static Delete = (token, username="") => new Promise((resolve, reject) => {
         axios({
             method: "DELETE",
-            url: `${API_URL}/users${ (username !== "") ? "?username="+username : "" }`,
+            url: `${API_URL}/users${ (username !== "") ? "?user="+username : "" }`,
             headers: {"Authorization": token}
         }).then(res => resolve(res.data)).catch(err => reject(err));
     });
