@@ -26,10 +26,10 @@ import { ApiAuthorization } from "../api";
 import NotFound from './NotFound';
 import Login from './Login';
 import Records from './Records';
+import Profile from './Profile';
 
 const Users = () => <h2>Users</h2>;
 const Roles = () => <h2>Roles</h2>;
-const Profile = () => <h2>Profile</h2>;
 
 class Base extends Component {
     constructor(props) {
@@ -40,7 +40,7 @@ class Base extends Component {
             status: "success",
             loggedIn: Authentication.isAuthenticated(),
             toasts: []
-        }
+        };
     }
 
     toggleUserMenuButtonClick = () => (this.state.loggedIn) ? this.setState({userOpen: !this.state.userOpen}) : "";
@@ -64,6 +64,10 @@ class Base extends Component {
         Authentication.reset();
         this.setState({userOpen: !this.state.userOpen, loggedIn: false});
         this.forceUpdate();
+    };
+    onProfile = () => {
+        this.props.history.push("/profile");
+        this.setState({userOpen: !this.state.userOpen});
     };
 
     addToast = (title, text, color) => this.setState({toasts: this.state.toasts.concat({title: title, text: text, color: color, id: Math.ceil(Math.random()*10000000)})});
@@ -125,7 +129,7 @@ class Base extends Component {
                                                 <EuiFlexItem>
                                                     <EuiFlexGroup justifyContent="spaceAround">
                                                         <EuiFlexItem grow={false}>
-                                                            <EuiLink href="#/profile">Edit profile</EuiLink>
+                                                            <EuiLink onClick={this.onProfile.bind(this)}>Edit profile</EuiLink>
                                                         </EuiFlexItem>
 
                                                         <EuiFlexItem grow={false}>
@@ -155,7 +159,7 @@ class Base extends Component {
                     { Authentication.isAuthenticated() && <Route path="/records" render={(props) => <Records {...props} addToast={this.addToast.bind(this)}/>}/> }
                     { Authentication.isAuthenticated() && Authentication.getUser().role === "admin" && <Route path="/users" component={Users}/> }
                     { Authentication.isAuthenticated() && Authentication.getUser().role === "admin" && <Route path="/roles" component={Roles}/> }
-                    { Authentication.isAuthenticated() && <Route path="/profile" component={Profile}/> }
+                    { Authentication.isAuthenticated() && <Route path="/profile" render={(props) => <Profile {...props} addToast={this.addToast.bind(this)} reload={this.forceUpdate.bind(this)}/>}/> }
                     <Route component={NotFound}/>
                 </Switch>
             </div>
