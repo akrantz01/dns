@@ -281,7 +281,7 @@ export default class extends Component {
                                 this.props.addToast(`Successfully deleted ${this.state.selectedItems.length} record${(this.state.selectedItems.length === 1) ? "" : "s"}`, "", "success");
                                 this.setState({selectedItems: []});
                                 setTimeout(() => this.refreshUsers(), 250);
-                            }} fill>Delete { this.state.selectedItems.length } Record{ this.state.selectedItems.length === 1 ? "" : "s" }</EuiButton>
+                            }} fill>Delete { this.state.selectedItems.length } User{ this.state.selectedItems.length === 1 ? "" : "s" }</EuiButton>
                             <EuiSpacer size="xl"/>
                             <EuiBasicTable
                                 items={pageOfItems}
