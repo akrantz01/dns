@@ -40,36 +40,8 @@ func deleteRole(w http.ResponseWriter, r *http.Request, path string, database *b
 		return
 	}
 
-	roleName := r.URL.Path[len(path):]
-
-	// Check if query parameter to delete specific effect
-	if r.URL.Query().Get("effect") != "" {
-		switch r.URL.Query().Get("effect") {
-		case "allow":
-			if err := db.DeleteRole(roleName, "allow", database); err != nil {
-				util.Responses.Error(w, http.StatusInternalServerError, "failed to delete role: "+err.Error())
-				return
-			}
-		case "deny":
-			if err := db.DeleteRole(roleName, "deny", database); err != nil {
-				util.Responses.Error(w, http.StatusInternalServerError, "failed to delete role: "+err.Error())
-				return
-			}
-		default:
-			util.Responses.Error(w, http.StatusBadRequest, "query parameter 'effect' must be 'allow' or 'deny'")
-			return
-		}
-
-		util.Responses.Success(w)
-		return
-	}
-
-	// Delete both effects
-	if err := db.DeleteRole(roleName, "allow", database); err != nil {
-		util.Responses.Error(w, http.StatusInternalServerError, "failed to delete role: "+err.Error())
-		return
-	}
-	if err := db.DeleteRole(roleName, "deny", database); err != nil {
+	// Delete role
+	if err := db.DeleteRole(r.URL.Path[len(path):], database); err != nil {
 		util.Responses.Error(w, http.StatusInternalServerError, "failed to delete role: "+err.Error())
 		return
 	}

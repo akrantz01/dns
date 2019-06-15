@@ -1,52 +1,66 @@
 package db
 
 import (
+	"encoding/json"
 	"fmt"
 	bolt "go.etcd.io/bbolt"
 	"regexp"
 )
 
-func CreateRole(name, filter, effect string, db *bolt.DB) error {
+type Role struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Allow       string `json:"allow"`
+	Deny        string `json:"deny"`
+}
+
+func CreateRole(name, description, allowFilter, denyFilter string, db *bolt.DB) error {
 	if name == "admin" {
 		return fmt.Errorf("cannot add permissions to role 'admin'")
+	} else if _, err := regexp.Compile(allowFilter); err != nil {
+		return fmt.Errorf("invalid regular expression for allow")
+	} else if _, err := regexp.Compile(denyFilter); err != nil {
+		return fmt.Errorf("invalid regular expression for deny")
 	}
 
-	if _, err := regexp.Compile(filter); err != nil {
-		return fmt.Errorf("invalid regular expression")
+	r := Role{
+		Name: name,
+		Description: description,
+		Allow: allowFilter,
+		Deny: denyFilter,
+	}
+	data, err := json.Marshal(r)
+	if err != nil {
+		return err
 	}
 
 	return db.Update(func(tx *bolt.Tx) error {
-		return tx.Bucket([]byte("roles")).Put([]byte(name+"-"+effect), []byte(filter))
+		return tx.Bucket([]byte("roles")).Put([]byte(name), data)
 	})
 }
 
-func GetRole(name string, db *bolt.DB) (string, string, error) {
-	var allow string
-	var deny string
+func GetRole(name string, db *bolt.DB) (*Role, error) {
+	var r Role
 
 	if err := db.Update(func(tx *bolt.Tx) error {
-		roles := tx.Bucket([]byte("roles"))
-		if value := roles.Get([]byte(name+"-allow")); len(value) != 0 {
-			allow = string(value)
-		}
-		if value := roles.Get([]byte(name+"-deny")); len(value) != 0 {
-			deny = string(value)
+		if value := tx.Bucket([]byte("roles")).Get([]byte(name)); len(value) != 0 {
+			return json.Unmarshal(value, &r)
 		}
 		return nil
 	}); err != nil {
-		return "", "", err
+		return nil, err
 	}
 
-	return allow, deny, nil
+	return &r, nil
 }
 
-func DeleteRole(name, effect string, db *bolt.DB) error {
+func DeleteRole(name string, db *bolt.DB) error {
 	if name == "admin" {
 		return fmt.Errorf("cannot delete role 'admin'")
 	}
 
 	return db.Update(func(tx *bolt.Tx) error {
-		return tx.Bucket([]byte("roles")).Delete([]byte(name+"-"+effect))
+		return tx.Bucket([]byte("roles")).Delete([]byte(name))
 	})
 }
 
@@ -55,21 +69,21 @@ func EvaluateRole(name, record string, db *bolt.DB) (bool, error) {
 	approved := true
 
 	// Retrieve role
-	allow, deny, err := GetRole(name, db)
+	role, err := GetRole(name, db)
 	if err != nil {
 		return false, err
 	}
 
 	// Evaluate rules if they exist
-	if deny != "" {
-		matched, err := regexp.Match(deny, []byte(record))
+	if role.Deny != "" {
+		matched, err := regexp.Match(role.Deny, []byte(record))
 		if err != nil {
 			return false, err
 		}
 		approved = !matched
 	}
-	if allow != "" {
-		matched, err := regexp.Match(allow, []byte(record))
+	if role.Allow != "" {
+		matched, err := regexp.Match(role.Allow, []byte(record))
 		if err != nil {
 			return false, err
 		}

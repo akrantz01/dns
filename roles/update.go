@@ -51,8 +51,9 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 		return
 	}
 	validationErr, valid := util.ValidateBody(body, []string{"filter", "effect"}, map[string]map[string]string{
-		"filter": {"type": "string", "required": "false"},
-		"effect": {"type": "string", "required": "true"},
+		"description": {"type": "string", "required": "true"},
+		"allow": {"type": "string", "required": "true"},
+		"deny": {"type": "string", "required": "true"},
 	})
 	if validationErr != "" {
 		util.Responses.Error(w, http.StatusBadRequest, validationErr)
@@ -60,32 +61,25 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 	}
 
 	// Get role from database
-	allow, deny, err := db.GetRole(r.URL.Path[len(path):], database)
+	role, err := db.GetRole(r.URL.Path[len(path):], database)
+	if role == nil {
+		util.Responses.Error(w, http.StatusBadRequest, "specified role does not exist")
+		return
+	}
 
 	// Update values if they exist in the body
-	if valid["filter"] && body["effect"].(string) != "swap" {
-		switch body["effect"].(string) {
-		case "allow":
-			allow = body["filter"].(string)
-		case "deny":
-			deny = body["filter"].(string)
-		default:
-			util.Responses.Error(w, http.StatusBadRequest, "field 'effect' must be 'allow', 'deny' or 'swap'")
-			return
-		}
+	if valid["description"] {
+		role.Description = body["description"].(string)
 	}
-	if body["effect"].(string) == "swap" {
-		t := allow
-		allow = deny
-		deny = t
+	if valid["allow"] {
+		role.Allow = body["allow"].(string)
+	}
+	if valid["deny"] {
+		role.Deny = body["deny"].(string)
 	}
 
 	// Save to database
-	if err := db.CreateRole(r.URL.Path[len(path):], allow, "allow", database); err != nil {
-		util.Responses.Error(w, http.StatusInternalServerError, "failed to write role to database: "+err.Error())
-		return
-	}
-	if err := db.CreateRole(r.URL.Path[len(path):], deny, "deny", database); err != nil {
+	if err := db.CreateRole(role.Name, role.Description, role.Allow, role.Deny, database); err != nil {
 		util.Responses.Error(w, http.StatusInternalServerError, "failed to write role to database: "+err.Error())
 		return
 	}

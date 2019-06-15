@@ -1,11 +1,11 @@
 package roles
 
 import (
+	"encoding/json"
 	"github.com/akrantz01/krantz.dev/dns/db"
 	"github.com/akrantz01/krantz.dev/dns/util"
 	bolt "go.etcd.io/bbolt"
 	"net/http"
-	"strings"
 )
 
 func list(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
@@ -39,11 +39,16 @@ func list(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 	}
 
 	// Get from database
-	var roles []string
+	var roles []db.Role
 	if err := database.View(func(tx *bolt.Tx) error {
 		return tx.Bucket([]byte("roles")).ForEach(func(k, v []byte) error {
-			parts := strings.Split(string(k), "-")
-			roles = append(roles, parts[0])
+			var role db.Role
+
+			if err := json.Unmarshal(v, &role); err != nil {
+				return err
+			}
+
+			roles = append(roles, role)
 
 			return nil
 		})
@@ -52,6 +57,5 @@ func list(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 		return
 	}
 
-	roles = util.RemoveDuplicates(roles)
 	util.Responses.SuccessWithData(w, roles)
 }

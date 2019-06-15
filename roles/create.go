@@ -52,37 +52,26 @@ func create(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 		return
 	} else if err, _ := util.ValidateBody(body, []string{"name", "filter", "effect"}, map[string]map[string]string{
 		"name": {"type": "string", "required": "true"},
-		"filter": {"type": "string", "required": "true"},
-		"effect": {"type": "string", "required": "true"},
+		"description": {"type": "string", "required": "true"},
+		"allow": {"type": "string", "required": "true"},
+		"deny": {"type": "string", "required": "true"},
 	}); err != "" {
 		util.Responses.Error(w, http.StatusBadRequest, err)
 		return
 	}
 
 	// Check if already exists
-	allow, deny, err := db.GetRole(body["name"].(string), database)
+	role, err := db.GetRole(body["name"].(string), database)
 	if err != nil {
 		util.Responses.Error(w, http.StatusInternalServerError, "failed to retrieve existing roles")
 		return
-	}
-	switch body["effect"].(string) {
-	case "allow":
-		if allow != "" {
-			util.Responses.Error(w, http.StatusBadRequest, "role for allow already exists")
-			return
-		}
-	case "deny":
-		if deny != "" {
-			util.Responses.Error(w, http.StatusBadRequest, "role for deny already exists")
-			return
-		}
-	default:
-		util.Responses.Error(w, http.StatusBadRequest, "role must be one of 'allow' or 'deny'")
+	} else if role.Name != "" {
+		util.Responses.Error(w, http.StatusBadRequest, "role already exists")
 		return
 	}
 
 	// Write role to database
-	if err := db.CreateRole(body["name"].(string), body["filter"].(string), body["effect"].(string), database); err != nil {
+	if err := db.CreateRole(body["name"].(string), body["description"].(string), body["allow"].(string), body["deny"].(string), database); err != nil {
 		util.Responses.Error(w, http.StatusBadRequest, "failed to write role: "+err.Error())
 		return
 	}

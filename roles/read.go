@@ -41,14 +41,11 @@ func read(w http.ResponseWriter, r *http.Request, path string, database *bolt.DB
 	}
 
 	// Get from database
-	role := make(map[string]string)
-	allow, deny, err := db.GetRole(r.URL.Path[len(path):], database)
+	role, err := db.GetRole(r.URL.Path[len(path):], database)
 	if err != nil {
 		util.Responses.Error(w, http.StatusInternalServerError, "failed to retrieve record")
 		return
 	}
-	role["allow"] = allow
-	role["deny"] = deny
 
 	util.Responses.SuccessWithData(w, role)
 }
