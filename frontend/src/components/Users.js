@@ -191,7 +191,7 @@ export default class extends Component {
                 sortable: true
             },
             {
-                field: "Actions",
+                name: "Actions",
                 actions: [
                     {
                         name: "Edit",
