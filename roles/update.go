@@ -50,7 +50,7 @@ func update(w http.ResponseWriter, r *http.Request, path string, database *bolt.
 		util.Responses.Error(w, http.StatusBadRequest, "failed to decode body: "+err.Error())
 		return
 	}
-	validationErr, valid := util.ValidateBody(body, []string{"filter", "effect"}, map[string]map[string]string{
+	validationErr, valid := util.ValidateBody(body, []string{"description", "allow", "deny"}, map[string]map[string]string{
 		"description": {"type": "string", "required": "true"},
 		"allow": {"type": "string", "required": "true"},
 		"deny": {"type": "string", "required": "true"},

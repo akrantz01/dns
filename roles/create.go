@@ -50,7 +50,7 @@ func create(w http.ResponseWriter, r *http.Request, database *bolt.DB) {
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		util.Responses.Error(w, http.StatusBadRequest, "failed to decode  body: "+err.Error())
 		return
-	} else if err, _ := util.ValidateBody(body, []string{"name", "filter", "effect"}, map[string]map[string]string{
+	} else if err, _ := util.ValidateBody(body, []string{"name", "description", "allow", "deny"}, map[string]map[string]string{
 		"name": {"type": "string", "required": "true"},
 		"description": {"type": "string", "required": "true"},
 		"allow": {"type": "string", "required": "true"},
