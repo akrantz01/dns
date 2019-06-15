@@ -140,7 +140,7 @@ export class ApiRoles {
         }).then(res => resolve(res.data)).catch(err => reject(err));
     });
 
-    static Create = (name, filter, effect, token) => new Promise((resolve, reject) => {
+    static Create = (name, description, allow, deny, token) => new Promise((resolve, reject) => {
         axios({
             method: "POST",
             url: `${API_URL}/roles`,
@@ -150,8 +150,9 @@ export class ApiRoles {
             },
             data: {
                 name: name,
-                filter: filter,
-                effect: effect
+                description: description,
+                allow: allow,
+                deny: deny
             }
         }).then(res => resolve(res.data)).catch(err => reject(err));
     });
@@ -164,7 +165,7 @@ export class ApiRoles {
         }).then(res => resolve(res.data)).catch(err => reject(err));
     });
 
-    static Update = (name, filter, effect, token) => new Promise((resolve, reject) => {
+    static Update = (name, description, allow, deny, token) => new Promise((resolve, reject) => {
         axios({
             method: "PUT",
             url: `${API_URL}/roles/${name}`,
@@ -173,16 +174,17 @@ export class ApiRoles {
                 "Content-Type": "application/json"
             },
             data: {
-                filter: filter,
-                effect: effect
+                description: description,
+                allow: allow,
+                deny: deny
             }
         }).then(res => resolve(res.data)).catch(err => reject(err));
     });
 
-    static Delete = (name, effect="", token) => new Promise((resolve, reject) => {
+    static Delete = (name, token) => new Promise((resolve, reject) => {
         axios({
             method: "DELETE",
-            url: `${API_URL}/roles/${name}${ (effect !== "") ? "?effect="+effect : "" }`,
+            url: `${API_URL}/roles/${name}`,
             headers: {"Authorization": token}
         }).then(res => resolve(res.data)).catch(err => reject(err));
     });

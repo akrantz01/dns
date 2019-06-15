@@ -28,8 +28,7 @@ import Login from './Login';
 import Records from './Records';
 import Profile from './Profile';
 import Users from './Users';
-
-const Roles = () => <h2>Roles</h2>;
+import Roles from './Roles';
 
 class Base extends Component {
     constructor(props) {
@@ -157,8 +156,8 @@ class Base extends Component {
 
                     { Authentication.isAuthenticated() && <Redirect exact from="/" to="/records"/>}
                     { Authentication.isAuthenticated() && <Route path="/records" render={(props) => <Records {...props} addToast={this.addToast.bind(this)}/>}/> }
-                    { Authentication.isAuthenticated() && Authentication.getUser().role === "admin" && <Route path="/users" render={(props) => <Users {...props} addToast={this.addToast.bind(this)} reload={this.forceUpdate.bind(this)}/>}/> }
-                    { Authentication.isAuthenticated() && Authentication.getUser().role === "admin" && <Route path="/roles" component={Roles}/> }
+                    { Authentication.isAuthenticated() && Authentication.getUser().role === "admin" && <Route path="/users" render={(props) => <Users {...props} addToast={this.addToast.bind(this)}/>}/> }
+                    { Authentication.isAuthenticated() && Authentication.getUser().role === "admin" && <Route path="/roles" render={(props) => <Roles {...props} addToast={this.addToast.bind(this)}/> }/> }
                     { Authentication.isAuthenticated() && <Route path="/profile" render={(props) => <Profile {...props} addToast={this.addToast.bind(this)} reload={this.forceUpdate.bind(this)}/>}/> }
                     <Route component={NotFound}/>
                 </Switch>
