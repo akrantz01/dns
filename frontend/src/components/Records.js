@@ -257,26 +257,26 @@ export default class extends Component {
                             <EuiSpacer/>
                             <EuiButton color="danger" iconType="trash" disabled={this.state.selectedItems.length === 0} onClick={() => {
                                 let successfulFinish = true;
-                                for (let record of this.state.selectedItems) ApiRecords.Delete(record.name, record.type, Authentication.getToken())
-                                    .catch(err => {
-                                        switch (err.response.status) {
-                                            case 400:
-                                                this.props.addToast("Failed to delete record", `Invalid request format: ${err.response.data.reason}`, "danger");
-                                                break;
-                                            case 401:
-                                                this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "danger");
-                                                break;
-                                            case 403:
-                                                this.props.addToast("Authorization failure", `Role ${Authentication.getUser().role} is not allowed to delete ${record.name} of type ${record.type}`, "danger");
-                                                break;
-                                            case 500:
-                                                this.props.addToast("Internal server danger", err.response.reason, "danger");
-                                                break;
-                                            default:
-                                                break;
-                                        }
-                                        successfulFinish = false;
-                                    });
+                                let catchErr = record => err => {
+                                    switch (err.response.status) {
+                                        case 400:
+                                            this.props.addToast("Failed to delete record", `Invalid request format: ${err.response.data.reason}`, "danger");
+                                            break;
+                                        case 401:
+                                            this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "danger");
+                                            break;
+                                        case 403:
+                                            this.props.addToast("Authorization failure", `Role ${Authentication.getUser().role} is not allowed to delete ${record.name} of type ${record.type}`, "danger");
+                                            break;
+                                        case 500:
+                                            this.props.addToast("Internal server danger", err.response.reason, "danger");
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    successfulFinish = false;
+                                };
+                                for (let record of this.state.selectedItems) ApiRecords.Delete(record.name, record.type, Authentication.getToken()).catch(catchErr(record));
                                 if (successfulFinish) this.props.addToast(`Successfully deleted ${this.state.selectedItems.length} record${(this.state.selectedItems === 1) ? "" : "s"}`, "", "success");
                                 this.refreshRecords();
                             }} fill >Delete { this.state.selectedItems.length } Record{ this.state.selectedItems.length === 1 ? "" : "s" }</EuiButton>

@@ -266,20 +266,20 @@ export default class extends Component {
                             <EuiSpacer/>
                             <EuiButton color="danger" iconType="trash" disabled={this.state.selectedItems.length === 0} onClick={() => {
                                 let successfulFinish = true;
-                                for (let record of this.state.selectedItems) ApiUsers.Delete(Authentication.getToken(), record.username)
-                                    .catch(err => {
-                                        switch (err.response.status) {
-                                            case 401:
-                                                this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "danger");
-                                                break;
-                                            case 500:
-                                                this.props.addToast("Internal server error", err.response.data.reason, "danger");
-                                                break;
-                                            default:
-                                                break;
-                                        }
-                                        successfulFinish = false;
-                                    });
+                                let catchErr = err => {
+                                    switch (err.response.status) {
+                                        case 401:
+                                            this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "danger");
+                                            break;
+                                        case 500:
+                                            this.props.addToast("Internal server error", err.response.data.reason, "danger");
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    successfulFinish = false;
+                                };
+                                for (let record of this.state.selectedItems) ApiUsers.Delete(Authentication.getToken(), record.username).catch(catchErr);
                                 if (successfulFinish) this.props.addToast(`Successfully deleted ${this.state.selectedItems.length} user${(this.state.selectedItems.length === 1) ? "" : "s"}`, "", "success");
                                 this.setState({selectedItems: []});
                                 setTimeout(() => this.refreshUsers(), 250);

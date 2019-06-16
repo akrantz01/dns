@@ -271,23 +271,23 @@ export default class extends Component {
                             <EuiSpacer/>
                             <EuiButton danger="danger" iconType="trash" disabled={this.state.selectedItems.length === 0} onClick={() => {
                                 let successfulFinish = true;
-                                for (let record of this.state.selectedItems) ApiRoles.Delete(record.name, Authentication.getToken())
-                                    .catch(err => {
-                                        switch (err.response.status) {
-                                            case 401:
-                                                this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "danger");
-                                                break;
-                                            case 403:
-                                                this.props.addToast("Authorization failure", "You must be in the 'admin' role to delete roles", "danger");
-                                                break;
-                                            case 500:
-                                                this.props.addToast("Internal server error", err.response.data.reason, "danger");
-                                                break;
-                                            default:
-                                                break;
-                                        }
-                                        successfulFinish = false;
-                                    });
+                                let catchErr = err => {
+                                    switch (err.response.status) {
+                                        case 401:
+                                            this.props.addToast("Authentication failure", "Your authentication token is invalid, please log out and log back in", "danger");
+                                            break;
+                                        case 403:
+                                            this.props.addToast("Authorization failure", "You must be in the 'admin' role to delete roles", "danger");
+                                            break;
+                                        case 500:
+                                            this.props.addToast("Internal server error", err.response.data.reason, "danger");
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    successfulFinish = false;
+                                };
+                                for (let record of this.state.selectedItems) ApiRoles.Delete(record.name, Authentication.getToken()).catch(catchErr);
                                 if (successfulFinish) this.props.addToast(`Successfully delete ${this.state.selectedItems.length} role${(this.state.selectedItems.length === 1) ? "" : "s"}`, "", "success");
                                 this.setState({selectedItems: []});
                                 setTimeout(() => this.refreshRoles(), 250);
