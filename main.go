@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	rice "github.com/GeertJohan/go.rice"
 	"github.com/akrantz01/krantz.dev/dns/db"
 	"github.com/akrantz01/krantz.dev/dns/records"
 	"github.com/akrantz01/krantz.dev/dns/roles"
@@ -179,6 +180,7 @@ func main() {
 	flag.String("http.admin.username", "admin", "Username of the admin user")
 	flag.String("http.admin.password", "admin", "Password of the admin user")
 	flag.Bool("http.disabled", false, "Disable the API entirely")
+	flag.Bool("http.frontend", false, "Disable React frontend")
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
 	if err := viper.BindPFlags(pflag.CommandLine); err != nil { log.Fatalf("Failed to setup command line arguments: %v", err) }
@@ -195,6 +197,7 @@ func main() {
 	viper.SetDefault("http.admin.name", "DNS Admin")
 	viper.SetDefault("http.admin.username", "admin")
 	viper.SetDefault("http.admin.password", "admin")
+	viper.SetDefault("http.disable-frontend", false)
 	viper.SetDefault("http.disabled", false)
 
 	// Parse configuration
@@ -264,6 +267,14 @@ func main() {
 		http.Handle("/api/users/logout", c.Handler(handlers.LoggingHandler(os.Stdout, http.HandlerFunc(users.Logout(database)))))
 		http.Handle("/api/roles", c.Handler(handlers.LoggingHandler(os.Stdout, http.HandlerFunc(roles.AllRolesHandler(database)))))
 		http.Handle("/api/roles/", c.Handler(handlers.LoggingHandler(os.Stdout, http.HandlerFunc(roles.SingleRoleHandler("/api/roles/", database)))))
+
+		// Setup frontend routes
+		if !viper.GetBool("http.disable-frontend") {
+			http.Handle("/", http.FileServer(rice.MustFindBox("frontend/build").HTTPBox()))
+			http.Handle("/static/*", http.FileServer(rice.MustFindBox("frontend/build").HTTPBox()))
+		}
+
+		// Start HTTP
 		if err := http.ListenAndServe(viper.GetString("http.host") + ":" + viper.GetString("http.port"), nil); err != nil { httpErr <- err }
 	}()
 

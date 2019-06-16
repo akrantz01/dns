@@ -30,3 +30,6 @@ http:
 
   # Disable the HTTP API
   disabled: false
+
+  # Disable frontend interface
+  disable-frontend: false
