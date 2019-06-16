@@ -6,6 +6,11 @@ dns:
   # What port to listen on
   port: 1053
 
+  # Upstream resolvers to use
+  upstream:
+    - 1.1.1.1:53
+    - 1.0.0.1:53
+
   # Database to use to store records
   database: ./records.db
 

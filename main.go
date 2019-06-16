@@ -16,6 +16,7 @@ import (
 	bolt "go.etcd.io/bbolt"
 	"gopkg.in/hlandau/passlib.v1"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"time"
@@ -39,6 +40,7 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 
 	// Iterate over all questions
 	for _, q := range r.Question {
+		var recordFound bool
 		hdr := dns.RR_Header{Name: q.Name, Rrtype: q.Qtype, Class: q.Qclass}
 
 		// Do different things based on record type
@@ -46,101 +48,145 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 		case dns.TypeA:
 			record := db.Get.A(q.Name)
 			if record != nil {
+				recordFound = true
 				r.Answer = append(r.Answer, &dns.A{Hdr: hdr, A: record.Address})
 			}
 		case dns.TypeAAAA:
 			record :=  db.Get.AAAA(q.Name)
 			if record != nil {
+				recordFound = true
 				r.Answer = append(r.Answer, &dns.AAAA{Hdr: hdr, AAAA: record.Address})
 			}
 		case dns.TypeCNAME:
 			record :=  db.Get.CNAME(q.Name)
 			if record != nil {
+				recordFound = true
 				r.Answer = append(r.Answer, &dns.CNAME{Hdr: hdr, Target: record.Target})
 			}
 		case dns.TypeMX:
 			record :=  db.Get.MX(q.Name)
 			if record != nil {
+				recordFound = true
 				r.Answer = append(r.Answer, &dns.MX{Hdr: hdr, Preference: record.Priority, Mx: record.Host})
 			}
 		case dns.TypeLOC:
 			record :=  db.Get.LOC(q.Name)
 			if record != nil {
+				recordFound = true
 				locString, vers := record.ToParsable()
 				r.Answer = append(r.Answer, util.ParseLOCString(locString, vers, hdr))
 			}
 		case dns.TypeSRV:
 			record :=  db.Get.SRV(q.Name)
 			if record != nil {
+				recordFound = true
 				r.Answer = append(r.Answer, &dns.SRV{Hdr: hdr, Priority: record.Priority, Weight: record.Weight, Port: record.Port, Target: record.Target})
 			}
 		case dns.TypeSPF:
 			record :=  db.Get.SPF(q.Name)
 			if record != nil {
+				recordFound = true
 				r.Answer = append(r.Answer, &dns.SPF{Hdr: hdr, Txt: record.Text})
 			}
 		case dns.TypeTXT:
 			record :=  db.Get.TXT(q.Name)
 			if record != nil {
+				recordFound = true
 				r.Answer = append(r.Answer, &dns.TXT{Hdr: hdr, Txt: record.Text})
 			}
 		case dns.TypeNS:
 			record :=  db.Get.NS(q.Name)
 			if record != nil {
+				recordFound = true
 				r.Answer = append(r.Answer, &dns.NS{Hdr: hdr, Ns: record.Nameserver})
 			}
 		case dns.TypeCAA:
 			record :=  db.Get.CAA(q.Name)
 			if record != nil {
+				recordFound = true
 				r.Answer = append(r.Answer, &dns.CAA{Hdr: hdr, Flag: record.Flag, Tag: record.Tag, Value: record.Content})
 			}
 		case dns.TypePTR:
 			record := db.Get.PTR(q.Name)
 			if record != nil {
+				recordFound = true
 				r.Answer = append(r.Answer, &dns.PTR{Hdr: hdr, Ptr: record.Domain})
 			}
 		case dns.TypeCERT:
 			record :=  db.Get.CERT(q.Name)
 			if record != nil {
+				recordFound = true
 				r.Answer = append(r.Answer, &dns.CERT{Hdr: hdr, Type: record.Type, KeyTag: record.KeyTag, Algorithm: record.Algorithm, Certificate: record.Certificate})
 			}
 		case dns.TypeDNSKEY:
 			record :=  db.Get.DNSKEY(q.Name)
 			if record != nil {
+				recordFound = true
 				r.Answer = append(r.Answer, &dns.DNSKEY{Hdr: hdr, Flags: record.Flags, Protocol: record.Protocol, Algorithm: record.Algorithm, PublicKey: record.PublicKey})
 			}
 		case dns.TypeDS:
 			record :=  db.Get.DS(q.Name)
 			if record != nil {
+				recordFound = true
 				r.Answer = append(r.Answer, &dns.DS{Hdr: hdr, KeyTag: record.KeyTag, Algorithm: record.Algorithm, DigestType: record.DigestType, Digest: record.Digest})
 			}
 		case dns.TypeNAPTR:
 			record :=  db.Get.NAPTR(q.Name)
 			if record != nil {
+				recordFound = true
 				r.Answer = append(r.Answer, &dns.NAPTR{Hdr: hdr, Order: record.Order, Preference: record.Preference, Flags: record.Flags, Service: record.Service, Regexp: record.Regexp, Replacement: record.Replacement})
 			}
 		case dns.TypeSMIMEA:
 			record :=  db.Get.SMIMEA(q.Name)
 			if record != nil {
+				recordFound = true
 				r.Answer = append(r.Answer, &dns.SMIMEA{Hdr: hdr, Usage: record.Usage, Selector: record.Selector, MatchingType: record.MatchingType, Certificate: record.Certificate})
 			}
 		case dns.TypeSSHFP:
 			record :=  db.Get.SSHFP(q.Name)
 			if record != nil {
+				recordFound = true
 				r.Answer = append(r.Answer, &dns.SSHFP{Hdr: hdr, Algorithm: record.Algorithm, Type: record.Type, FingerPrint: record.Fingerprint})
 			}
 		case dns.TypeTLSA:
 			record :=  db.Get.TLSA(q.Name)
 			if record != nil {
+				recordFound = true
 				r.Answer = append(r.Answer, &dns.TLSA{Hdr: hdr, Usage: record.Usage, Selector: record.Selector, MatchingType: record.MatchingType, Certificate: record.Certificate})
 			}
 		case dns.TypeURI:
 			record :=  db.Get.URI(q.Name)
 			if record != nil {
+				recordFound = true
 				r.Answer = append(r.Answer, &dns.URI{Hdr: hdr, Priority: record.Priority, Weight: record.Weight, Target: record.Target})
 			}
 		default:
-			r.Rcode = dns.RcodeNameError
+			recordFound = false
+		}
+
+		if !recordFound {
+			// Look up recursively
+			recursMsg := new(dns.Msg)
+			recursMsg.SetQuestion(dns.Fqdn(q.Name), q.Qtype)
+			recursMsg.SetEdns0(4096, true)
+
+			// Get random upstream resolver
+			rand.Seed(time.Now().UnixNano())
+			resolvers := viper.GetStringSlice("dns.upstream")
+
+			// Send new response
+			client := new(dns.Client)
+			resp, _, err := client.Exchange(recursMsg, resolvers[rand.Intn(len(resolvers))])
+			if err != nil {
+				r.Rcode = dns.RcodeNameError
+				continue
+			}
+
+			// Add new responses
+			if resp.Rcode != dns.RcodeSuccess {
+				r.Rcode = resp.Rcode
+			}
+			r.Answer = append(r.Answer, resp.Answer...)
 		}
 	}
 
@@ -156,6 +202,21 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 
 	// Log to console
 	util.LogResponse(w, r, start)
+}
+
+func queryDNS(q string, t uint16) ([]dns.RR, int) {
+	msg := new(dns.Msg)
+	msg.SetQuestion(dns.Fqdn(q), t)
+	msg.SetEdns0(4096, true)
+
+	c := new(dns.Client)
+	rand.Seed(time.Now().UnixNano())
+	resolvers := viper.GetStringSlice("dns.upstream")
+	in, _, err := c.Exchange(msg, resolvers[rand.Intn(len(resolvers))])
+	if err != nil {
+		return []dns.RR{}, dns.RcodeNameError
+	}
+	return in.Answer, dns.RcodeSuccess
 }
 
 func main() {
@@ -191,6 +252,7 @@ func main() {
 	viper.SetDefault("dns.database", "./records.db")
 	viper.SetDefault("dns.disable-tcp", false)
 	viper.SetDefault("dns.disable-udp", false)
+	viper.SetDefault("dns.upstream", []string{"1.1.1.1:53", "8.8.8.8:53"})
 
 	viper.SetDefault("http.host", "127.0.0.1")
 	viper.SetDefault("http.port", 8080)
