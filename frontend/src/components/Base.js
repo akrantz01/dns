@@ -82,9 +82,9 @@ class Base extends Component {
                             <EuiHeaderLogo iconType="indexManagementApp" href={(Authentication.isAuthenticated()) ? "#/records" : "#"} aria-label="Go to home page">DNS Management</EuiHeaderLogo>
                         </EuiHeaderSectionItem>
                         <EuiHeaderLinks>
-                            { Authentication.isAuthenticated() && <EuiHeaderLink href="#/records" isActive>Records</EuiHeaderLink> }
-                            { Authentication.getUser().role === "admin" && <EuiHeaderLink href="#/users">Users</EuiHeaderLink> }
-                            { Authentication.getUser().role === "admin" && <EuiHeaderLink href="#/roles">Roles</EuiHeaderLink> }
+                            { Authentication.isAuthenticated() && <EuiHeaderLink href="#/records" isActive={this.props.history.location.pathname === "/records"}>Records</EuiHeaderLink> }
+                            { Authentication.getUser().role === "admin" && <EuiHeaderLink href="#/users" isActive={this.props.history.location.pathname === "/users"}>Users</EuiHeaderLink> }
+                            { Authentication.getUser().role === "admin" && <EuiHeaderLink href="#/roles" isActive={this.props.history.location.pathname === "/roles"}>Roles</EuiHeaderLink> }
                         </EuiHeaderLinks>
                     </EuiHeaderSection>
 
