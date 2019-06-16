@@ -37,6 +37,7 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 	r := new(dns.Msg)
 	r.SetReply(m)
 	r.Authoritative = true
+	r.RecursionAvailable = true
 
 	// Iterate over all questions
 	for _, q := range r.Question {
@@ -169,14 +170,14 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, m *dns.Msg) {
 			recursMsg := new(dns.Msg)
 			recursMsg.SetQuestion(dns.Fqdn(q.Name), q.Qtype)
 			recursMsg.SetEdns0(4096, true)
+			recursMsg.RecursionDesired = true
 
 			// Get random upstream resolver
 			rand.Seed(time.Now().UnixNano())
 			resolvers := viper.GetStringSlice("dns.upstream")
 
 			// Send new response
-			client := new(dns.Client)
-			resp, _, err := client.Exchange(recursMsg, resolvers[rand.Intn(len(resolvers))])
+			resp, err := dns.Exchange(recursMsg, resolvers[rand.Intn(len(resolvers))])
 			if err != nil {
 				r.Rcode = dns.RcodeNameError
 				continue
