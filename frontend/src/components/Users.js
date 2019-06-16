@@ -135,7 +135,7 @@ export default class extends Component {
                         break;
                 }
             }).finally(() => {
-                this.setState({selectedItems: [], data: {name: "", username: "", password: "", role: "", logins: 0}});
+                this.setState({create: {name: "", username: "", password: "", role: "", logins: 0}});
                 this.refreshUsers();
                 this.toggleCreateModal();
         })

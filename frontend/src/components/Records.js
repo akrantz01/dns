@@ -131,6 +131,7 @@ export default class extends Component {
                         break;
                 }
             }).finally(() => {
+                this.setState({name: "", record: "A"});
                 this.refreshRecords();
                 this.toggleCreateModal();
             });

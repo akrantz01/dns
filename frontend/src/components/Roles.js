@@ -136,6 +136,7 @@ export default class extends Component {
                         break;
                 }
             }).finally(() => {
+                this.setState({create: {name: "", description: "", allow: "", deny: ""}});
                 this.refreshRoles();
                 this.toggleCreateModal();
         })
