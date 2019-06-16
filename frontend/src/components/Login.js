@@ -14,7 +14,7 @@ import {
     EuiButton
 } from '@elastic/eui';
 
-import {ApiAuthorization} from "../api";
+import {ApiAuthorization, ApiUsers} from "../api";
 
 export default class extends Component {
     constructor(props) {
@@ -29,11 +29,26 @@ export default class extends Component {
     onUsernameChange = (e) => this.setState({username: e.target.value});
     onPasswordChange = (e) => this.setState({password: e.target.value});
     onSubmit = () => {
-        ApiAuthorization.Login(this.state.username, this.state.password).then(res => {
-            localStorage.setItem("token", res.data.token);
-            this.props.addToast("Successfully logged in", "You may now modify DNS records", "success");
-            this.props.loginCb();
-            this.props.reload();
+        ApiAuthorization.Login(this.state.username, this.state.password).then(loginRes => {
+            ApiUsers.Read(loginRes.data.token).then(userRes => {
+                localStorage.setItem("token", loginRes.data.token);
+                localStorage.setItem("user", JSON.stringify(userRes.data));
+                this.props.addToast("Successfully logged in", "You may now modify DNS records", "success");
+                this.props.loginCb();
+                this.props.reload();
+            }).catch(err => {
+                switch (err.response.status) {
+                    case 400:
+                    case 401:
+                        this.props.addToast("Unable to retrieve user data", "invalid authentication token. Please login again", "danger");
+                        break;
+                    case 500:
+                        this.props.addToast("Internal server error", `Internal server error: ${err.response.data.reason}`, "danger");
+                        break;
+                    default:
+                        break;
+                }
+            })
         }).catch(err => {
             switch (err.response.status) {
                 case 400:
