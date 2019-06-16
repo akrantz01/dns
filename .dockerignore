@@ -1,0 +1,6 @@
+.git*
+config.sample.yaml
+README.md
+records.db
+*/build
+*/node_modules
