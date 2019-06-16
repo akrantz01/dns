@@ -256,6 +256,7 @@ export default class extends Component {
                             <EuiButton onClick={this.refreshRecords.bind(this)} style={{ marginLeft: 20, marginTop: (isMobile()) ? 20 : 0 }} color="ghost">Refresh</EuiButton>
                             <EuiSpacer/>
                             <EuiButton color="danger" iconType="trash" disabled={this.state.selectedItems.length === 0} onClick={() => {
+                                let successfulFinish = true;
                                 for (let record of this.state.selectedItems) ApiRecords.Delete(record.name, record.type, Authentication.getToken())
                                     .catch(err => {
                                         switch (err.response.status) {
@@ -274,8 +275,9 @@ export default class extends Component {
                                             default:
                                                 break;
                                         }
+                                        successfulFinish = false;
                                     });
-                                this.props.addToast(`Successfully deleted ${this.state.selectedItems.length} record${(this.state.selectedItems === 1) ? "" : "s"}`, "", "success");
+                                if (successfulFinish) this.props.addToast(`Successfully deleted ${this.state.selectedItems.length} record${(this.state.selectedItems === 1) ? "" : "s"}`, "", "success");
                                 this.refreshRecords();
                             }} fill >Delete { this.state.selectedItems.length } Record{ this.state.selectedItems.length === 1 ? "" : "s" }</EuiButton>
                             <EuiSpacer size="xl"/>

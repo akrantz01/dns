@@ -265,6 +265,7 @@ export default class extends Component {
                             <EuiButton onClick={this.refreshUsers.bind(this)} style={{ marginLeft: 20, marginTop: (isMobile() && window.innerWidth <  375) ? 20 : 0 }} color="ghost">Refresh</EuiButton>
                             <EuiSpacer/>
                             <EuiButton color="danger" iconType="trash" disabled={this.state.selectedItems.length === 0} onClick={() => {
+                                let successfulFinish = true;
                                 for (let record of this.state.selectedItems) ApiUsers.Delete(Authentication.getToken(), record.username)
                                     .catch(err => {
                                         switch (err.response.status) {
@@ -277,8 +278,9 @@ export default class extends Component {
                                             default:
                                                 break;
                                         }
+                                        successfulFinish = false;
                                     });
-                                this.props.addToast(`Successfully deleted ${this.state.selectedItems.length} record${(this.state.selectedItems.length === 1) ? "" : "s"}`, "", "success");
+                                if (successfulFinish) this.props.addToast(`Successfully deleted ${this.state.selectedItems.length} user${(this.state.selectedItems.length === 1) ? "" : "s"}`, "", "success");
                                 this.setState({selectedItems: []});
                                 setTimeout(() => this.refreshUsers(), 250);
                             }} fill>Delete { this.state.selectedItems.length } User{ this.state.selectedItems.length === 1 ? "" : "s" }</EuiButton>

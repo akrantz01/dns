@@ -270,6 +270,7 @@ export default class extends Component {
                             <EuiButton onClick={this.refreshRoles.bind(this)} style={{ marginLeft: 20, marginTop: (isMobile() && window.innerWidth < 375) ? 20 : 0 }} color="ghost">Refresh</EuiButton>
                             <EuiSpacer/>
                             <EuiButton danger="danger" iconType="trash" disabled={this.state.selectedItems.length === 0} onClick={() => {
+                                let successfulFinish = true;
                                 for (let record of this.state.selectedItems) ApiRoles.Delete(record.name, Authentication.getToken())
                                     .catch(err => {
                                         switch (err.response.status) {
@@ -285,8 +286,9 @@ export default class extends Component {
                                             default:
                                                 break;
                                         }
+                                        successfulFinish = false;
                                     });
-                                this.props.addToast(`Successfully delete ${this.state.selectedItems.length} role${(this.state.selectedItems.length === 1) ? "" : "s"}`, "", "success");
+                                if (successfulFinish) this.props.addToast(`Successfully delete ${this.state.selectedItems.length} role${(this.state.selectedItems.length === 1) ? "" : "s"}`, "", "success");
                                 this.setState({selectedItems: []});
                                 setTimeout(() => this.refreshRoles(), 250);
                             }} fill>Delete { this.state.selectedItems.length } Role{ this.state.selectedItems.length === 1 ? "" : "s" }</EuiButton>
