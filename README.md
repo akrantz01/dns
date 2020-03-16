@@ -4,7 +4,7 @@ It uses [Bolt](https://github.com/etcd-io/bbolt) for storage and [Miekg DNS](htt
 
 ## Configuration
 All configuration is done through a YAML file.
-An example configuration file with descriptions of each field can be found at [`config.example.yaml`](/config.example.yaml).
+An example configuration file with descriptions of each field can be found at [`config.sample.yaml`](/config.sample.yaml).
 
 ## Deployment
 The server can be deployed via either Docker or a standalone binary.
