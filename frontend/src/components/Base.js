@@ -41,23 +41,21 @@ class Base extends Component {
             toasts: []
         };
 
-        setInterval(() => {
-            if (Authentication.isAuthenticated()) ApiUsers.Read(Authentication.getToken())
-                .then(userRes => localStorage.setItem("user", JSON.stringify(userRes.data)))
-                .catch(err => {
-                    switch (err.response.status) {
-                        case 400:
-                        case 401:
-                            this.props.addToast("Unable to retrieve user data", "invalid authentication token. Please login again", "danger");
-                            break;
-                        case 500:
-                            this.props.addToast("Internal server error", `Internal server error: ${err.response.data.reason}`, "danger");
-                            break;
-                        default:
-                            break;
-                    }
-            })
-        }, 15000);
+        if (Authentication.isAuthenticated()) ApiUsers.Read(Authentication.getToken())
+            .then(userRes => localStorage.setItem("user", JSON.stringify(userRes.data)))
+            .catch(err => {
+                switch (err.response.status) {
+                    case 400:
+                    case 401:
+                        this.props.addToast("Unable to retrieve user data", "invalid authentication token. Please login again", "danger");
+                        break;
+                    case 500:
+                        this.props.addToast("Internal server error", `Internal server error: ${err.response.data.reason}`, "danger");
+                        break;
+                    default:
+                        break;
+                }
+        });
     }
 
     toggleUserMenuButtonClick = () => (this.state.loggedIn) ? this.setState({userOpen: !this.state.userOpen}) : "";
