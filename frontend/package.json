@@ -6,7 +6,7 @@
     "@elastic/datemath": "^5.0.2",
     "@elastic/eui": "^10.4.3",
     "axios": "^0.21.1",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
     "react-router-dom": "^5.0.1",
